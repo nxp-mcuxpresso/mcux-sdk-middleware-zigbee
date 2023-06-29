@@ -1,0 +1,9 @@
+NXP Software Content Register
+
+Package: mcux-sdk-middleware-zigbee.git
+Version: 1.0.9
+Outgoing License: LA_OPT_NXP_SOFTWARE_License v44 - Additional distribution license granted, license in Section 2.3 applies
+License File: LICENSE.htm
+Description and comments: Zigbee middleware
+Release Location: https://github.com/nxp-mcuxpresso/mcux-sdk-middleware-zigbee.git
+Origin: NXP (proprietary)
