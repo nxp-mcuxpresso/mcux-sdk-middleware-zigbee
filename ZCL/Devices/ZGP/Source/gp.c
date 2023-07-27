@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -97,7 +97,7 @@ PUBLIC teZCL_Status eGP_RegisterComboBasicEndPoint(
     psDeviceInfo->sEndPoint.bIsManufacturerSpecificProfile =    FALSE;
     psDeviceInfo->sEndPoint.u16NumberOfClusters =               sizeof(tsGP_GreenPowerClusterInstances) / sizeof(tsZCL_ClusterInstance);
     psDeviceInfo->sEndPoint.psClusterInstance =                 (tsZCL_ClusterInstance*)&psDeviceInfo->sClusterInstance;
-    psDeviceInfo->sEndPoint.bDisableDefaultResponse =           ZCL_DISABLE_DEFAULT_RESPONSES;
+    psDeviceInfo->sEndPoint.bDisableDefaultResponse =           TRUE;
     psDeviceInfo->sEndPoint.pCallBackFunctions =                cbCallBack;
 
 #ifdef CLD_GREENPOWER
@@ -191,7 +191,7 @@ PUBLIC teZCL_Status eGP_RegisterProxyBasicEndPoint(
     psDeviceInfo->sEndPoint.bIsManufacturerSpecificProfile =    FALSE;
     psDeviceInfo->sEndPoint.u16NumberOfClusters =               sizeof(tsGP_GreenPowerClusterInstances) / sizeof(tsZCL_ClusterInstance);
     psDeviceInfo->sEndPoint.psClusterInstance =                 (tsZCL_ClusterInstance*)&psDeviceInfo->sClusterInstance;
-    psDeviceInfo->sEndPoint.bDisableDefaultResponse =           ZCL_DISABLE_DEFAULT_RESPONSES;
+    psDeviceInfo->sEndPoint.bDisableDefaultResponse =           TRUE;
     psDeviceInfo->sEndPoint.pCallBackFunctions =                cbCallBack;
 
 #ifdef CLD_GREENPOWER

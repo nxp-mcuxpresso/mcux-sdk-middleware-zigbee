@@ -1725,7 +1725,7 @@ PUBLIC void vZdoServersInit(void);
     keyPairTableSize = 0
     KeyTypeTable = "NULL"	
     if hasattr(configNode, "KeyDescriptorTable"):
-        keyPairTableSize = int(configNode.KeyDescriptorTable.get("Size"), 0)         	
+        keyPairTableSize = int(configNode.KeyDescriptorTable.get("Size"), 0)
         Cfile.write("PRIVATE ZPS_tsAplApsKeyDescriptorEntry s_keyPairTableStorage[%d] = {\n" % (keyPairTableSize + 3))
         num_pck = 0
         if hasattr(configNode.KeyDescriptorTable, "PreconfiguredKey"):
@@ -1746,7 +1746,10 @@ PUBLIC void vZdoServersInit(void);
         # fill in rest of table with blank addresses (all Fs in IEEE addr used to indicate this)
         if num_pck < (keyPairTableSize + 3):
             for pck in range(num_pck, (keyPairTableSize + 3)):
-                Cfile.write("    { 0, 0xFFFF, { }, 0  },\n")
+                if R23_UPDATES:
+                    Cfile.write("    { 0, 0xFFFF, { }, 0 , 0},\n")
+                else:
+                    Cfile.write("    { 0, 0xFFFF, { }, 0 },\n")
 
         Cfile.write("};\n")
         Cfile.write("ZPS_tsAplApsKeyDescriptorEntry  *psAplDefaultDistributedAPSLinkKey = &s_keyPairTableStorage[%d];\n" % (keyPairTableSize+1))

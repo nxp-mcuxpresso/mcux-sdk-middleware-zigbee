@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -141,12 +141,18 @@ extern "C" {
 #define GP_COMM_MAX_COUNT_CLUSTER      									 4
 #endif
 
+#ifndef GP_MAX_NUMBER_BUFFERED_RECORDS
+#define GP_MAX_NUMBER_BUFFERED_RECORDS                                  (0x04)
+#endif
+
+#ifndef GP_DELAY_GOTXQUEUE_RESPONSE_AT_GPD
+#define GP_DELAY_GOTXQUEUE_RESPONSE_AT_GPD                              (30)
+#endif
 
 #define GREENPOWER_CLUSTER_ID                                           (0x0021)
 
 #define GREENPOWER_PROFILE_ID                                           (0xA1E0)
 
-#define GP_MAX_NUMBER_BUFFERED_RECORDS                                  (0x04)
 /* ZGP Client features */
 #define GP_FEATURE_ZGPP_FEATURE                                          (1 << 0)   //ZGP Feature
 #define GP_FEATURE_ZGPP_DIRECT_COMM                                      (1 << 1)   //Direct communication (reception of GPDF via ZGP stub)

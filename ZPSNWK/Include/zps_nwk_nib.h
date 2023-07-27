@@ -443,6 +443,7 @@ typedef struct
 
 #define ZPS_NWK_NT_ACTV_PARENT              0 /**< Entry 0 is the parent */
 #define ZPS_NWK_NT_ACTV_FIRST_NON_PARENT    ZPS_NWK_NT_ACTV_PARENT+1 /**< Entry 0 is the parent */
+#define ZED_NWK_UNICAST_RETRY               50
 
 /**
  * ZPS NWK NIB Initial values
@@ -751,6 +752,8 @@ typedef struct
     uint8         u8NetworkWideBeaconAppendixSize;          /**< Allocated size for nwkNetworkWideBeaconAppendixTLVs */
     uint8         u8DeviceBeaconTlvsSize;                   /**< Allocated size for nwkDeviceBeaconPayloadTLVs */
     uint8         u8ZedTimeoutTlvsSize;                     /**< Allocated size for End Device Timeout */
+    uint8         u8PerformAdditionalMacDataPollRetries;     /**< nwkPerformAdditionalMacDataPollRetries */
+    uint8         u8NumMacDataPollRetries;
 #endif
     /**** Tables ****/
     zps_tsNwkSlist       sActvSortedList;                   /**< Linked list of sorted NT entries */

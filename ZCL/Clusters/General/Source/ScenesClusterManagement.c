@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -585,7 +585,12 @@ PUBLIC  teZCL_Status eCLD_ScenesRestoreClusters(tsZCL_EndPointDefinition *psEndP
                         {
                             break;
                         }
-
+                    }
+                    else
+                    {
+                        DBG_vPrintf(TRACE_SCENES, "\nError: eZCL_SearchForAttributeEntry (scene extension, attribute %d) returned %d",
+                                    psClusterInstance->psClusterDefinition->psSceneExtensionTable->au16Attributes[iAttribute].u16Attribute, eStatus);
+                        return eStatus;
                     }
 
                 }

@@ -54,20 +54,20 @@
 #define ZPS_ZDP_SIMPLE_DESC_REQ_CLUSTER_ID                  (0x0004)    /* [ISP001377_sfr 102] */
 #define ZPS_ZDP_ACTIVE_EP_REQ_CLUSTER_ID                    (0x0005)    /* [ISP001377_sfr 103] */
 #define ZPS_ZDP_MATCH_DESC_REQ_CLUSTER_ID                   (0x0006)    /* [ISP001377_sfr 104] */
-#ifndef R23_UPDATES
 #define ZPS_ZDP_COMPLEX_DESC_REQ_CLUSTER_ID                 (0x0010)    /* [ISP001377_sfr 105] */
 #define ZPS_ZDP_USER_DESC_REQ_CLUSTER_ID                    (0x0011)    /* [ISP001377_sfr 106] */
+#ifndef R23_UPDATES
 #define ZPS_ZDP_DISCOVERY_CACHE_REQ_CLUSTER_ID              (0x0012)    /* [ISP001377_sfr 107] */
 #endif
 #define ZPS_ZDP_DEVICE_ANNCE_REQ_CLUSTER_ID                 (0x0013)    /* [ISP001377_sfr 108] */
-#ifndef R23_UPDATES
 #define ZPS_ZDP_USER_DESC_SET_REQ_CLUSTER_ID                (0x0014)    /* [ISP001377_sfr 109] */
-#endif
 #define ZPS_ZDP_SYSTEM_SERVER_DISCOVERY_REQ_CLUSTER_ID      (0x0015)    /* [ISP001377_sfr 110] */
 #ifndef R23_UPDATES
 #define ZPS_ZDP_DISCOVERY_STORE_REQ_CLUSTER_ID              (0x0016)    /* [ISP001377_sfr 111] */
 #define ZPS_ZDP_NODE_DESC_STORE_REQ_CLUSTER_ID              (0x0017)    /* [ISP001377_sfr 112] */
+#endif
 #define ZPS_ZDP_POWER_DESC_STORE_REQ_CLUSTER_ID             (0x0018)    /* [ISP001377_sfr 113] */
+#ifndef R23_UPDATES
 #define ZPS_ZDP_ACTIVE_EP_STORE_REQ_CLUSTER_ID              (0x0019)    /* [ISP001377_sfr 114] */
 #define ZPS_ZDP_SIMPLE_DESC_STORE_REQ_CLUSTER_ID            (0x001a)    /* [ISP001377_sfr 115] */
 #define ZPS_ZDP_REMOVE_NODE_CACHE_REQ_CLUSTER_ID            (0x001b)    /* [ISP001377_sfr 116] */
@@ -78,16 +78,18 @@
 #endif
 #define ZPS_ZDP_BIND_REQ_CLUSTER_ID                         (0x0021)    /* [ISP001377_sfr 121] */
 #define ZPS_ZDP_UNBIND_REQ_CLUSTER_ID                       (0x0022)    /* [ISP001377_sfr 122] */
-#ifndef R23_UPDATES
 #define ZPS_ZDP_BIND_REGISTER_REQ_CLUSTER_ID                (0x0023)    /* [ISP001377_sfr 123] */
+#ifndef R23_UPDATES
 #define ZPS_ZDP_REPLACE_DEVICE_REQ_CLUSTER_ID               (0x0024)    /* [ISP001377_sfr 124] */
 #define ZPS_ZDP_STORE_BKUP_BIND_ENTRY_REQ_CLUSTER_ID        (0x0025)    /* [ISP001377_sfr 125] */
 #define ZPS_ZDP_REMOVE_BKUP_BIND_ENTRY_REQ_CLUSTER_ID       (0x0026)    /* [ISP001377_sfr 126] */
+#endif
 #define ZPS_ZDP_BACKUP_BIND_TABLE_REQ_CLUSTER_ID            (0x0027)    /* [ISP001377_sfr 127] */
 #define ZPS_ZDP_RECOVER_BIND_TABLE_REQ_CLUSTER_ID           (0x0028)    /* [ISP001377_sfr 128] */
+#ifndef R23_UPDATES
 #define ZPS_ZDP_BACKUP_SOURCE_BIND_REQ_CLUSTER_ID           (0x0029)    /* [ISP001377_sfr 129] */
-#define ZPS_ZDP_RECOVER_SOURCE_BIND_REQ_CLUSTER_ID          (0x002a)    /* [ISP001377_sfr 130] */
 #endif
+#define ZPS_ZDP_RECOVER_SOURCE_BIND_REQ_CLUSTER_ID          (0x002a)    /* [ISP001377_sfr 130] */
 #ifdef R23_UPDATES
 #define ZPS_ZDP_CLEAR_ALL_BINDINGS_REQ_CLUSTER_ID           (0x002b)
 #endif
@@ -113,11 +115,13 @@
 #define ZPS_ZDP_PARENT_ANNCE_CLUSTER_ID                     (0x001F)
 #define ZPS_ZDP_MAX_CHILD_IN_PARENT_ANNCE                   (10)
 #define ZPS_ZDP_MGMT_NWK_ENHANCE_UPDATE_REQ_CLUSTER_ID      (0x0039)    /* [ISP001377_sfr 139] */ /* TO BE UPDATED ONCE ID IS DEFINED */
-#define ZPS_ZDP_MGMT_MIB_IEEE_REQ_CLUSTER_ID				(0x003A)
+#define ZPS_ZDP_MGMT_MIB_IEEE_REQ_CLUSTER_ID                (0x003A)
 
 #ifdef R23_UPDATES
+#define ZPS_ZDP_SECURITY_GET_AUTH_LVL_REQ_CLUSTER_ID        (0x0042)
 #define ZPS_ZDP_SECURITY_SET_CONFIG_REQ_CLUSTER_ID          (0x0043)
 #define ZPS_ZDP_SECURITY_GET_CONFIG_REQ_CLUSTER_ID          (0x0044)
+#define ZPS_ZDP_SECURITY_DECOMMISSION_REQ_CLUSTER_ID         (0x0046)
 #endif
 
 /****************************************************************************/
@@ -188,8 +192,10 @@
 #define ZPS_ZDP_MGMT_MIB_IEEE_RSP_CLUSTER_ID				(0x803A)
 #define ZPS_ZDP_MGMT_NWK_UNSOLICITED_ENHANCE_UPDATE_NOTIFY_CLUSTER_ID   (0x803B)
 #ifdef R23_UPDATES
+#define ZPS_ZDP_SECURITY_GET_AUTH_LVL_RSP_CLUSTER_ID        (0x8042)
 #define ZPS_ZDP_SECURITY_SET_CONFIG_RSP_CLUSTER_ID          (0x8043)
 #define ZPS_ZDP_SECURITY_GET_CONFIG_RSP_CLUSTER_ID          (0x8044)
+#define ZPS_ZDP_SECURITY_DECOMMISSION_RSP_CLUSTER_ID        (0x8046)
 #endif
 
 /* Maximum payload size possible for a ZDP message */
@@ -209,6 +215,7 @@
 
 /* Maximum number of TLVs to which the request Security_get_config_req can be answered */
 #define ZPS_APL_ZDP_MAX_NUM_TLV_SEC_GET_CONFIG_RSP 5
+#define ZPS_APL_ZDP_MAX_NUM_EUI64_DECOMMISSION_DEVICES_RSP 5
 #endif
 
 /* route table entry size is 5 bytes (see Table 2.128 in spec) */
@@ -741,6 +748,15 @@ typedef struct {
     uint8 u8TlvCount;
     uint8 *pu8TlvId;
 } ZPS_tsAplZdpSecurityGetConfigReq;
+
+typedef struct {
+    uint64 u64IEEEAddrOfInterest;
+} ZPS_tsAplZdpSecurityGetAuthLvlReq;
+
+typedef struct {
+    uint8 u8TlvCount;
+    uint64 *pu64TlvId;
+} ZPS_tsAplZdpSecurityDecommissionReq;
 #endif
 
 /****************************************************************************/
@@ -1182,6 +1198,15 @@ typedef struct {
     uint8 u8TlvCount;
     tsTlvGeneric *psTlv[ZPS_APL_ZDP_MAX_NUM_TLV_SEC_GET_CONFIG_RSP];
 } ZPS_tsAplZdpSecurityGetConfigRsp;
+
+typedef struct {
+    uint8 u8OverallStatus;
+    tuDeviceAuthLevel *psTlv;
+} ZPS_tsAplZdpSecurityGetAuthLvlRsp;
+
+typedef struct {
+    uint8 u8OverallStatus;
+} ZPS_tsAplZdpSecurityDecommissionRsp;
 #endif
 
 typedef struct {
@@ -1644,6 +1669,22 @@ PUBLIC ZPS_teStatus zps_eAplZdpSecurityGetConfigRequest(
     bool bExtAddr,
     uint8 *pu8SeqNumber,
     ZPS_tsAplZdpSecurityGetConfigReq *psZdpSecurityGetConfigReq);
+
+PUBLIC ZPS_teStatus zps_eAplZdpSecurityGetAuthLvlRequest(
+    void *pvApl,
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    ZPS_tsAplZdpSecurityGetAuthLvlReq *psZdpSecurityGetAuthLvlReq);
+
+PUBLIC ZPS_teStatus zps_eAplZdpSecurityDecommissionRequest(
+    void *pvApl,
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    tuDeviceEUI64List *psTlvDeviceEUI64ListReq);
 #endif
 
 /****************************************************************************/
@@ -2454,6 +2495,40 @@ ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityGetConfigRequest(
 {
     return zps_eAplZdpSecurityGetConfigRequest(ZPS_pvAplZdoGetAplHandle(), hAPduInst,
             uDstAddr, bExtAddr, pu8SeqNumber, psZdpSecurityGetConfigReq);
+}
+
+ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityGetAuthLvlRequest(
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    ZPS_tsAplZdpSecurityGetAuthLvlReq *psZdpSecurityGetAuthLvlReq) ZPS_ZDP_ALWAYS_INLINE;
+ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityGetAuthLvlRequest(
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    ZPS_tsAplZdpSecurityGetAuthLvlReq *psZdpSecurityGetAuthLvlReq)
+{
+    return zps_eAplZdpSecurityGetAuthLvlRequest(ZPS_pvAplZdoGetAplHandle(), hAPduInst,
+            uDstAddr, bExtAddr, pu8SeqNumber, psZdpSecurityGetAuthLvlReq);
+}
+
+ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityDecommissionRequest(
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    tuDeviceEUI64List *psTlvDeviceEUI64ListReq) ZPS_ZDP_ALWAYS_INLINE;
+ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityDecommissionRequest(
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    tuDeviceEUI64List *psTlvDeviceEUI64ListReq)
+{
+    return zps_eAplZdpSecurityDecommissionRequest(ZPS_pvAplZdoGetAplHandle(), hAPduInst,
+            uDstAddr, bExtAddr, pu8SeqNumber, psTlvDeviceEUI64ListReq);
 }
 #endif
 

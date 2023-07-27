@@ -81,7 +81,8 @@ typedef enum {
     ZPS_APS_INSTALL_KEY      = 0x03,
     ZPS_APS_PARTNER_LINK_KEY = 0x04,
     ZPS_APS_NEG_LINK_KEY     = 0x05,
-    ZPS_APS_NO_KEY_PRESENT   = 0x06
+    ZPS_APS_NO_KEY_PRESENT   = 0x06,
+    ZPS_APS_LINK_KEY_FIXED   = 0x0F
 }ZPS_teApsLinkKeyType;
 
 /****************************************************************************/

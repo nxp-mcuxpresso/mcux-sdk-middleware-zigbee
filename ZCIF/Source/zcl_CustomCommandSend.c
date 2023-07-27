@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -136,7 +136,8 @@ PUBLIC teZCL_Status eZCL_CustomCommandSend(
         }
     }
 
-    if(u8SourceEndPointId != ZCL_GP_PROXY_ENDPOINT_ID)
+    if (u8SourceEndPointId != ZCL_GP_PROXY_ENDPOINT_ID &&
+        u8DestinationEndPointId != ZCL_GP_PROXY_ENDPOINT_ID)
     {
         /* Check end point is registered and cluster is present in the send device */
         if(eZCL_SearchForEPentry(u8SourceEndPointId, &psEndPointDefinition) != E_ZCL_SUCCESS)

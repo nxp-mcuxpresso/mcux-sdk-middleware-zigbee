@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -1495,7 +1495,7 @@ PUBLIC teZCL_Status eGp_BufferTransmissionPacket(
     	}
     	if (E_GP_ADD_MSG_TO_TX_QUEUE_AFTER_DELAY == eGreenPowerBufferedCommand)
     	{
-    		psZgpBufferedApduRecord->sBufferedApduInfo.u16Delay = 400; //msec
+            psZgpBufferedApduRecord->sBufferedApduInfo.u16Delay = GP_DELAY_GOTXQUEUE_RESPONSE_AT_GPD; //msec
     	}
     	else if (E_GP_ADD_MSG_TO_TX_QUEUE == eGreenPowerBufferedCommand)
     	{

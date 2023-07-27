@@ -546,10 +546,9 @@ PRIVATE bool_t vNfTcCallback (uint16 u16ShortAddress,
             if (u64DeviceAddress == ZPS_u64NwkNibGetMappedIeeeAddr( ZPS_pvAplZdoGetNwkHandle(), psKeyTbl[i].u16ExtAddrLkup ) )
             {
 #if (BDB_JOIN_USES_INSTALL_CODE_KEY == FALSE)
-                psKeyTbl[i].u16ExtAddrLkup          = 0xFFFF;
                 psAib->pu32IncomingFrameCounter[i]  = 0;
-                psKeyTbl[i].u32OutgoingFrameCounter   = 0;
-                memset(psKeyTbl[i].au8LinkKey, 0, ZPS_SEC_KEY_LENGTH);
+                memset(&psKeyTbl[i], 0, sizeof(ZPS_tsAplApsKeyDescriptorEntry));
+                psKeyTbl[i].u16ExtAddrLkup          = 0xFFFF;
 #else
                 eStatus =  ZPS_bAplZdoTrustCenterGetDevicePermissions ( u64DeviceAddress,
                                                                 &eDevicePermissions );

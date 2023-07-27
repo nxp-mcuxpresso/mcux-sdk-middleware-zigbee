@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020,2022 NXP.
+ * Copyright 2020,2022,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -1942,7 +1942,11 @@ PUBLIC bool zps_bAplZdpUnpackSystemServerDiscResponse(ZPS_tsAfEvent *psZdoServer
         
         psReturnStruct->u8SequNumber = u8SeqNum;
         psReturnStruct->u16ClusterId = u16ClusterId;
+        psReturnStruct->uZdpData.sSystemServerDiscoveryRsp.u8Status =
+                (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[1];
+        psReturnStruct->uZdpData.sSystemServerDiscoveryRsp.u16ServerMask = 0;
 
+        /* this function may fail if this is a single status response */
         PDUM_u16APduInstanceReadNBO(hAPduInst , u32Location, "bh",
                 &psReturnStruct->uZdpData.sSystemServerDiscoveryRsp);
     }
@@ -2034,10 +2038,24 @@ PUBLIC bool zps_bAplZdpUnpackPowerDescStoreResponse(ZPS_tsAfEvent *psZdoServerEv
         
         psReturnStruct->u8SequNumber = u8SeqNum;
         psReturnStruct->u16ClusterId = u16ClusterId;
+        psReturnStruct->uZdpData.sPowerDescStoreRsp.u8Status =
+                (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[1];
 
-        
-        PDUM_u16APduInstanceReadNBO(hAPduInst , u32Location, "blh",
-                &psReturnStruct->uZdpData.sPowerDescStoreRsp);
+        /* Power Descriptor field is included only for SUCCESS */
+        if (0 == PDUM_u16APduInstanceReadNBO(hAPduInst, u32Location, "bl",
+                         &psReturnStruct->uZdpData.sPowerDescStoreRsp))
+        {
+            /* The rsp might be the short form, status only */
+            psReturnStruct->uZdpData.sPowerDescStoreRsp.u64IeeeAddr = 0;
+            psReturnStruct->uZdpData.sPowerDescStoreRsp.sPowerDescriptor.uBitUnion.u16Value = 0;
+        }
+        else if (psReturnStruct->uZdpData.sPowerDescStoreRsp.u8Status == ZPS_E_SUCCESS)
+        {
+            /* Read 16 bits for power descriptor */
+            u32Location += 9; /* 1 b + 1 l */
+            PDUM_u16APduInstanceReadNBO(hAPduInst, u32Location, "h",
+                    &psReturnStruct->uZdpData.sPowerDescStoreRsp.sPowerDescriptor.uBitUnion.u16Value);
+        }
     }
     return bZdp;
 }    
@@ -2816,6 +2834,64 @@ PUBLIC bool zps_bAplZdpUnpackSecuritySetGetResponse(ZPS_tsAfEvent *psZdoServerEv
     }
     return bZdp;
 }
+
+/****************************************************************************
+ *
+ * NAME:       zps_bAplZdpUnpackSecurityGetAuthLvl
+ */
+/**
+ *
+ *
+ * @ingroup
+ *
+ * @param
+ * @param
+ * @param
+ *
+ * @param
+ *
+ * @return
+ *
+ * @note
+ *
+ ****************************************************************************/
+PUBLIC bool zps_bAplZdpUnpackSecurityGetAuthLvl(ZPS_tsAfEvent *psZdoServerEvent,
+                                                 ZPS_tsAfZdpEvent *psReturnStruct)
+
+{
+    bool bZdp = FALSE;
+    if( psZdoServerEvent != NULL)
+    {
+        uint8     u8SeqNum;
+        uint32    u32Location = 0;
+
+        PDUM_thAPduInstance hAPduInst = psZdoServerEvent->uEvent.sApsDataIndEvent.hAPduInst;
+        uint16 u16ClusterId = psZdoServerEvent->uEvent.sApsDataIndEvent.u16ClusterId;
+        bZdp = TRUE;
+
+        u8SeqNum = APDU_BUF_INC(hAPduInst, u32Location);
+
+        psReturnStruct->u8SequNumber = u8SeqNum;
+        psReturnStruct->u16ClusterId = u16ClusterId;
+
+        psReturnStruct->uZdpData.sSingleStatusRsp.u8Status = APDU_BUF_INC(hAPduInst, u32Location);
+
+        uint8 u8PayloadSize = PDUM_u16APduInstanceGetPayloadSize(hAPduInst) - sizeof(uint8);
+        u8PayloadSize -= sizeof(uint8); /* OverallStatus */
+        uint8 u8Size = MIN(sizeof(psReturnStruct->uLists.au8Data) - 1, u8PayloadSize);
+
+        psReturnStruct->uLists.au8Data[0] = u8Size; /* size of the remaining data in the buffer */
+
+        if (u8Size)
+        {
+            char acFormat[] = {'a', u8Size, 0};
+
+            PDUM_u16APduInstanceReadNBO(psZdoServerEvent->uEvent.sApsDataIndEvent.hAPduInst,
+                    u32Location, acFormat, psReturnStruct->uLists.au8Data + 1);
+        }
+    }
+    return bZdp;
+}
 #endif
 
 /****************************************************************************
@@ -2914,11 +2990,15 @@ PUBLIC bool zps_bAplZdpUnpackResponse (ZPS_tsAfEvent *psZdoServerEvent ,ZPS_tsAf
         case ZPS_ZDP_UNBIND_RSP_CLUSTER_ID:
 #ifdef R23_UPDATES
         case ZPS_ZDP_CLEAR_ALL_BINDINGS_RSP_CLUSTER_ID:
+        case ZPS_ZDP_SECURITY_DECOMMISSION_RSP_CLUSTER_ID:
 #endif
         case ZPS_ZDP_MGMT_PERMIT_JOINING_RSP_CLUSTER_ID:
             bZdp = zps_bAplZdpUnpackSingleStatusResponse(psZdoServerEvent, psReturnStruct);
             break;
 #ifdef R23_UPDATES
+        case ZPS_ZDP_SECURITY_GET_AUTH_LVL_RSP_CLUSTER_ID:
+            bZdp = zps_bAplZdpUnpackSecurityGetAuthLvl(psZdoServerEvent, psReturnStruct);
+            break;
         case ZPS_ZDP_SECURITY_SET_CONFIG_RSP_CLUSTER_ID:
         case ZPS_ZDP_SECURITY_GET_CONFIG_RSP_CLUSTER_ID:
             bZdp = zps_bAplZdpUnpackSecuritySetGetResponse(psZdoServerEvent, psReturnStruct);
@@ -3009,7 +3089,15 @@ PUBLIC bool zps_bAplZdpUnpackResponse (ZPS_tsAfEvent *psZdoServerEvent ,ZPS_tsAf
             break;
 
         default:
-            bZdp = FALSE;
+            if (u16ClusterId & 0x8000)
+            {
+                /* Single status response */
+                bZdp = zps_bAplZdpUnpackSingleStatusResponse(psZdoServerEvent, psReturnStruct);
+            }
+            else
+            {
+                bZdp = FALSE;
+            }
             break;
     }
    

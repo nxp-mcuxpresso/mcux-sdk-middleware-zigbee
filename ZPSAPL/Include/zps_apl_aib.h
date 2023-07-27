@@ -96,6 +96,25 @@
 /***        Type Definitions                                              ***/
 /****************************************************************************/
 
+#ifdef R23_UPDATES
+typedef enum
+{
+    ZPS_E_INITIAL_JOIN_NO_AUTHENTICATION                   = 0x00,
+    ZPS_E_INITIAL_JOIN_INSTALL_CODE_KEY                    = 0x01,
+    ZPS_E_INITIAL_JOIN_ANONYMOUS_KEY_NEGOTIATION           = 0x02,
+    ZPS_E_INITIAL_JOIN_KEY_NEGOTIATION_WITH_AUTHENTICATION = 0x03
+} ZPS_teAibInitialJoinAuth;
+
+typedef enum
+{
+    ZPS_E_POST_JOIN_KEY_UPDATE_NOT_UPDATE             = 0x00,
+    ZPS_E_POST_JOIN_KEY_UPDATE_KEY_REQUEST_METHOD     = 0x01,
+    ZPS_E_POST_JOIN_KEY_UPDATE_UNAUTH_KEY_NEGOTIATION = 0x02,
+    ZPS_E_POST_JOIN_KEY_UPDATE_AUTH_KEY_NEGOTIATION   = 0x03,
+    ZPS_E_POST_JOIN_KEY_UPDATE_APP_DEF_CERTIF_BASED   = 0x04
+} ZPS_teAibPostJoinKeyUpdateMethod;
+#endif
+
 /* [I SP001349_sfr 56]  */
 typedef struct
 {
@@ -169,6 +188,11 @@ typedef struct
     uint16 u16ExtAddrLkup;
     uint8  au8LinkKey[ZPS_SEC_KEY_LENGTH];
     uint8  u8BitMapSecLevl;
+#ifdef R23_UPDATES
+    uint8 u8InitialJoinAuth;
+    uint8 u8PostJoinKeyUpdateMethod;
+    uint8 u8KeyNegotiationMethod;
+#endif
 } ZPS_tsAplApsKeyDescriptorEntry;
 
 typedef struct
@@ -248,8 +272,10 @@ PUBLIC uint64 zps_eAplAibGetApsTrustCenterAddress(void *pvApl);
 PUBLIC ZPS_teStatus zps_eAplAibRemoveBindTableEntryForMacAddress( void *pvApl, uint64 u64MacAddress );
 PUBLIC uint8 zps_u8AplAibGetDeviceApsKeyType(void *pvApl, uint64 u64IeeeAddress, bool_t bFindFixTclk);
 PUBLIC ZPS_teStatus zps_eAplAibSetDeviceApsKeyType(void *pvApl,uint64 u64IeeeAddress, uint8 u8KeyType);
-#ifdef WWAH_SUPPORT
+#if defined(R23_UPDATES) || defined(WWAH_SUPPORT)
 PUBLIC bool_t zps_bIsClusterReqWithApsKey ( uint8 u8Endpoint, uint16 u16ClusterId );
+#endif
+#ifdef WWAH_SUPPORT
 PUBLIC void ZPS_vAplExtdedAibSetWWAH ( uint8 u8BitmaskSet );
 PUBLIC uint8 ZPS_u8AplExtdedAibGetWWAH (void);
 #endif
