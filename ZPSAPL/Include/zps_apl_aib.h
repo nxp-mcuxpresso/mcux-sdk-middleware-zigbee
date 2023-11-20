@@ -85,6 +85,9 @@
 #define apscMinHeaderOverhead       (12UL)
 #define apscapsParentAnnounceBaseTimer    10  // Usage in seconds
 #define apsParentAnnounceJitterMax        10  // Usage in seconds
+#ifdef R23_UPDATES
+#define apscJoinerTlvsUnfragmentedMaxSize 79
+#endif
 
 #ifdef WWAH_SUPPORT
 #define ZPS_APL_WWAH_KEY_ROTATION        0x1
@@ -169,17 +172,21 @@ typedef struct
     uint32 u32SizeOfBindingTable;
 }ZPS_tsAplApsmeBindingTable;
 
+#ifndef R23_UPDATES
 typedef struct
 {
     ZPS_tsAplApsmeBindingTableEntry* pvAplApsmeBindingTableForRemoteSrcAddr;
     uint32 u32SizeOfBindingCache;
     uint64* pu64RemoteDevicesList;
 }ZPS_tsAplApsmeBindingTableCache;
+#endif
 
 typedef struct
 {
-    ZPS_tsAplApsmeBindingTableCache* psAplApsmeBindingTableCache;
     ZPS_tsAplApsmeBindingTable* psAplApsmeBindingTable;
+#ifndef R23_UPDATES
+    ZPS_tsAplApsmeBindingTableCache* psAplApsmeBindingTableCache;
+#endif
 }ZPS_tsAplApsmeBindingTableType;
 
 typedef struct
@@ -208,6 +215,36 @@ typedef struct
     uint16  u16SizeOfKeyDescriptorTable;
 } ZPS_tsAplApsKeyDescriptorTable;
 
+#ifdef R23_UPDATES
+typedef struct 
+{
+    uint64   u64ApsChallengeTargetEui64;
+    uint64   u64ApsChallengeValue;
+    uint8    u8ApsChallengePeriodRemainingSeconds;
+    ZPS_tsTsvTimer       sChallengeTimer;
+} ZPS_tsAplApsChallengeReqEntry; 
+
+typedef struct
+{
+    ZPS_tsAplApsChallengeReqEntry *psAplApsChallengeReqEntry;
+    uint16  u16SizeOfChallengeReqTable;
+} ZPS_tsAplApsChallengeReqTable;
+
+typedef struct 
+{
+    uint16 u16LookupAddr;
+    uint16 u16MaxIncomingTxSize;
+    bool_t bSupported;
+
+} ZPS_tsAplApsFragmentationEntry; 
+
+typedef struct
+{
+    ZPS_tsAplApsFragmentationEntry *psAplApsFragmentationEntry;
+    uint16  u16SizeOfFragmentationTable;
+} ZPS_tsAplApsFragmentationCacheTable;
+#endif
+
 
 /* [I SP001349_sfr 19]  */
 typedef struct
@@ -220,6 +257,7 @@ typedef struct
     bool_t  bDecryptInstallCode;
 #ifdef R23_UPDATES
     bool_t  bApsZdoRestrictedMode;
+    bool_t  bRequireLinkKeyEncryptionForApsTransportKey;
 #endif
     uint8   u8KeyType;
     /* volatile */
@@ -240,12 +278,19 @@ typedef struct
     ZPS_tsAplApsmeBindingTableType *psAplApsmeAibBindingTable;
     ZPS_tsAplApsmeAIBGroupTable    *psAplApsmeGroupTable;
     ZPS_tsAplApsKeyDescriptorTable  *psAplDeviceKeyPairTable; /* [I SP001379_sr 344] */
+#ifdef R23_UPDATES
+    ZPS_tsAplApsFragmentationCacheTable *psAplFragmentationTable;
+#endif
     ZPS_tsAplApsKeyDescriptorEntry  *psAplDefaultTCAPSLinkKey;
     bool_t   bParentAnnouncePending;
     bool_t   bUseInstallCode;
     uint16   u16ApsSecurityTimeOutPeriod;        /* [I SP001379_sr 344] */
 #ifdef R23_UPDATES
+    ZPS_tsAplApsChallengeReqTable *psAplChallengeReqTable;
     uint8    u8ApsSupportedKeyNegotiationMethods;
+    uint8    u8ApsChallengePeriodTimeoutSeconds;
+    uint32   u32ApsChallengeFrameCounter;
+    bool_t   *pbVerifiedFrameCounter;
 #endif
     uint32   *pu32IncomingFrameCounter;
     uint32   *pau32ApsChannelMask;
@@ -262,16 +307,28 @@ typedef struct
 /****************************************************************************/
 
 PUBLIC ZPS_tsAplAib *zps_psAplAibGetAib(void *);
+PUBLIC uint64 zps_u64AplAibGetApsUseExtendedPanId(void *pvApl);
 PUBLIC ZPS_teStatus zps_eAplAibSetApsUseExtendedPanId(void *pvApl, uint64 u64UseExtPanId);
+PUBLIC uint32* zps_pu32AplAibGetApsChannelMask(void *pvApl, uint8 *u8ChannelMaskCount);
 PUBLIC ZPS_teStatus zps_eAplAibSetApsChannelMask(void *pvApl, uint32 u32ChannelMask);
 PUBLIC ZPS_teStatus zps_eAplAibSetApsChannelMaskByMacID (void *pvApl, uint16 u16MacID, uint32 u32ChannelMask);
 PUBLIC ZPS_teStatus zps_eAplAibSetApsDesignatedCoordinator(void *pvApl, bool bDesignatedCoordinator);
+PUBLIC ZPS_teStatus zps_eAplAibSetApsUseInstallCode(void *pvApl, bool bUseInstallCode);
+PUBLIC bool zps_bAplAibGetApsUseInsecureJoin(void *pvApl);
 PUBLIC ZPS_teStatus zps_eAplAibSetApsUseInsecureJoin(void *pvApl, bool bUseInsecureJoin);
 PUBLIC ZPS_teStatus zps_eAplAibSetApsTrustCenterAddress(void *pvApl, uint64 u64TcAddress);
 PUBLIC uint64 zps_eAplAibGetApsTrustCenterAddress(void *pvApl);
 PUBLIC ZPS_teStatus zps_eAplAibRemoveBindTableEntryForMacAddress( void *pvApl, uint64 u64MacAddress );
 PUBLIC uint8 zps_u8AplAibGetDeviceApsKeyType(void *pvApl, uint64 u64IeeeAddress, bool_t bFindFixTclk);
 PUBLIC ZPS_teStatus zps_eAplAibSetDeviceApsKeyType(void *pvApl,uint64 u64IeeeAddress, uint8 u8KeyType);
+PUBLIC ZPS_tsAplApsKeyDescriptorEntry** zps_psAplDefaultTrustCenterAPSLinkKey(void *pvApl);
+#ifdef R23_UPDATES
+PUBLIC ZPS_teStatus zps_eAplAibAddChallengeReqEntry(void* pvApl, uint64 u64Addr, uint64 u64ChallengeValue);
+PUBLIC ZPS_teStatus zps_eAplAibRemoveChallengeReqEntry(void* pvApl, uint64 u64Addr);
+PUBLIC bool zps_eAplAibFindChallengeReqTableEntry(void* pvApl, uint64 u64Addr, ZPS_tsAplApsChallengeReqEntry **psChallengeReqEntry);
+PUBLIC ZPS_teStatus zps_eAplAibAddFragmentationTableEntry(void* pvApl, tuFragParams *psTlvFrag);
+PUBLIC bool zps_eAplAibFindFragmentationTableEntry(void* pvApl, uint16 u16Addr, ZPS_tsAplApsFragmentationEntry **psFragmentationEntry);
+#endif
 #if defined(R23_UPDATES) || defined(WWAH_SUPPORT)
 PUBLIC bool_t zps_bIsClusterReqWithApsKey ( uint8 u8Endpoint, uint16 u16ClusterId );
 #endif
@@ -305,19 +362,30 @@ ZPS_AIB_INLINE ZPS_tsAplAibExtensions *ZPS_psAplAibGetAibExtentions(void)
     return (void*)zps_g_pvAib_extensions;
 }
 #endif
+
+ZPS_AIB_INLINE uint64 ZPS_u64AplAibGetApsUseExtendedPanId(void) ALWAYS_INLINE;
+ZPS_AIB_INLINE uint64 ZPS_u64AplAibGetApsUseExtendedPanId(void)
+{
+    return zps_u64AplAibGetApsUseExtendedPanId(ZPS_pvAplZdoGetAplHandle());
+}
+
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsUseExtendedPanId(uint64 u64UseExtPanId) ALWAYS_INLINE;
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsUseExtendedPanId(uint64 u64UseExtPanId)
 {
     return zps_eAplAibSetApsUseExtendedPanId(ZPS_pvAplZdoGetAplHandle(), u64UseExtPanId);
 }
 
+ZPS_AIB_INLINE uint32* ZPS_pu32AplAibGetApsChannelMask(uint8 *channelMaskCount) ALWAYS_INLINE;
+ZPS_AIB_INLINE uint32* ZPS_pu32AplAibGetApsChannelMask(uint8 *channelMaskCount)
+{
+    return zps_pu32AplAibGetApsChannelMask(ZPS_pvAplZdoGetAplHandle(), channelMaskCount);
+}
 
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsChannelMask(uint32 u32ChannelMask) ALWAYS_INLINE;
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsChannelMask(uint32 u32ChannelMask)
 {
     return zps_eAplAibSetApsChannelMask(ZPS_pvAplZdoGetAplHandle(), u32ChannelMask);
 }
-
 
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsChannelMaskByMacID(uint16 u16MacID, uint32 u32ChannelMask) ALWAYS_INLINE;
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsChannelMaskByMacID(uint16 u16MacID, uint32 u32ChannelMask)
@@ -331,6 +399,17 @@ ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsDesignatedCoordinator(bool bDesigna
     return zps_eAplAibSetApsDesignatedCoordinator(ZPS_pvAplZdoGetAplHandle(), bDesignatedCoordinator);
 }
 
+ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsUseInstallCode(bool bUseInstallCode) ALWAYS_INLINE;
+ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsUseInstallCode(bool bUseInstallCode)
+{
+    return zps_eAplAibSetApsUseInstallCode(ZPS_pvAplZdoGetAplHandle(), bUseInstallCode);
+}
+
+ZPS_AIB_INLINE bool ZPS_bAplAibGetApsUseInsecureJoin(void) ALWAYS_INLINE;
+ZPS_AIB_INLINE bool ZPS_bAplAibGetApsUseInsecureJoin(void)
+{
+    return zps_bAplAibGetApsUseInsecureJoin(ZPS_pvAplZdoGetAplHandle());
+}
 
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsUseInsecureJoin(bool bUseInsecureJoin) ALWAYS_INLINE;
 ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetApsUseInsecureJoin(bool bUseInsecureJoin)
@@ -366,6 +445,13 @@ ZPS_AIB_INLINE ZPS_teStatus ZPS_eAplAibSetDeviceApsKeyType(uint64 u64IeeeAddress
 {
     return zps_eAplAibSetDeviceApsKeyType(ZPS_pvAplZdoGetAplHandle(), u64IeeeAddress, u8KeyType);
 }
+
+ZPS_AIB_INLINE ZPS_tsAplApsKeyDescriptorEntry** ZPS_psAplDefaultTrustCenterAPSLinkKey( void) ALWAYS_INLINE;
+ZPS_AIB_INLINE ZPS_tsAplApsKeyDescriptorEntry** ZPS_psAplDefaultTrustCenterAPSLinkKey( void)
+{
+    return zps_psAplDefaultTrustCenterAPSLinkKey(ZPS_pvAplZdoGetAplHandle());
+}
+
 /****************************************************************************/
 /****************************************************************************/
 /****************************************************************************/

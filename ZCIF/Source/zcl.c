@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020, 2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -662,7 +662,15 @@ PRIVATE  teZCL_Status eZCL_CheckClusterStructureIntegrity(tsZCL_EndPointDefiniti
             {
                 return(E_ZCL_ERR_MANUFACTURER_SPECIFIC);
             }
-            ZCL_BIT_CLEAR(uint8, psEndPointDefinition->psClusterInstance[i].pu8AttributeControlBits[j],E_ZCL_ACF_RS);
+
+            /*
+             * We can support a cluster without any attributes. most of client
+             * cluster does not have attributes
+             */
+            if (psEndPointDefinition->psClusterInstance[i].pu8AttributeControlBits != NULL)
+            {
+                ZCL_BIT_CLEAR(uint8, psEndPointDefinition->psClusterInstance[i].pu8AttributeControlBits[j],E_ZCL_ACF_RS);
+            }
 
             if((psEndPointDefinition->psClusterInstance[i].psClusterDefinition->psAttributeDefinition[u16Index].u16AttributeArrayLength != 0)&&
               ((u16AttributeEnum - psEndPointDefinition->psClusterInstance[i].psClusterDefinition->psAttributeDefinition[u16Index].u16AttributeEnum) < psEndPointDefinition->psClusterInstance[i].psClusterDefinition->psAttributeDefinition[u16Index].u16AttributeArrayLength))
@@ -747,19 +755,22 @@ PUBLIC teZCL_Status eZCL_SearchForEPIndex(
                         uint8                       *pu8EndpointIndex)
 {
     uint8 i;
+    teZCL_Status teStatus = E_ZCL_FAIL;
 
-    if(pu8EndpointIndex == NULL)
-        return E_ZCL_FAIL;
-
-    for(i=0; i<psZCL_Common->u8NumberOfEndpoints; i++)
+    if(pu8EndpointIndex != NULL)
     {
-        if(psZCL_Common->psZCL_EndPointRecord[i].psEndPointDefinition->u8EndPointNumber == u8endpointId)
+        for(i=0; i<psZCL_Common->u8NumberOfEndpoints; i++)
         {
-            *pu8EndpointIndex = i;
-            return E_ZCL_SUCCESS;
+            tsZCL_EndPointDefinition *psEndPointDefinition =
+                    psZCL_Common->psZCL_EndPointRecord[i].psEndPointDefinition;
+            if(psEndPointDefinition && (psEndPointDefinition->u8EndPointNumber == u8endpointId))
+            {
+                *pu8EndpointIndex = i;
+                teStatus = E_ZCL_SUCCESS;
+            }
         }
     }
-    return E_ZCL_FAIL;
+    return teStatus;
 }
 /****************************************************************************
  **
@@ -779,10 +790,17 @@ PUBLIC teZCL_Status eZCL_SearchForEPIndex(
 PUBLIC uint8 u8ZCL_GetEPIdFromIndex(
                         uint8                       u8EndpointIndex)
 {
+    uint8 u8Status = 0;
+
     if(u8EndpointIndex < psZCL_Common->u8NumberOfEndpoints)
-        return(psZCL_Common->psZCL_EndPointRecord[u8EndpointIndex].psEndPointDefinition->u8EndPointNumber);
-    else
-        return 0;
+    {
+        if (psZCL_Common->psZCL_EndPointRecord[u8EndpointIndex].psEndPointDefinition)
+        {
+            u8Status = psZCL_Common->psZCL_EndPointRecord[u8EndpointIndex].psEndPointDefinition->u8EndPointNumber;
+        }
+    }
+
+    return u8Status;
 }
 /****************************************************************************
  **

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020, 2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -27,27 +27,45 @@
 /****************************************************************************/
 /***        Include files                                                 ***/
 /****************************************************************************/
-
+#ifndef NCP_HOST
 #include "MicroSpecific.h"
+#endif
 #include "ZQueue.h"
 #include "dbg.h"
+#ifndef NCP_HOST
 #include "pwrm.h"
+#endif
 
+#ifdef NCP_HOST
+#include "portmacro.h"
+#endif
 
 
 
 #if ZIGBEE_USE_FRAMEWORK
-#include "Messaging.h"
-#include "FunctionLib.h"
-#include "fsl_os_abstraction.h"
+	#if defined(K32W1480_SERIES) || defined(K32W1)
+		#include "fsl_component_messaging.h"
+	#else
+		#include "Messaging.h"
+	#endif
+
+	#include "FunctionLib.h"
+	#include "fsl_os_abstraction.h"
     /*! The MemManager Pool Id used by the Zigbee layer */
     #ifndef gZbPoolId_d
         #define gZbPoolId_d 0
     #endif
     /* Default memory allocator */
     #ifndef ZB_BufferAlloc
-        #define ZB_BufferAlloc(numBytes)   MEM_BufferAllocWithId(numBytes, gZbPoolId_d, (void*)__get_LR())
+		#if defined(K32W1480_SERIES) || defined(K32W1)
+        	#define ZB_BufferAlloc(numBytes)   MSG_Alloc(numBytes)
+		#else
+			#define ZB_BufferAlloc(numBytes)   MEM_BufferAllocWithId(numBytes, gZbPoolId_d, (void*)__get_LR())
+		#endif
     #endif
+#else
+#include <stdlib.h>
+#define ZB_BufferAlloc(numBytes)	malloc(numBytes)
 #endif
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -87,10 +105,21 @@ PUBLIC void ZQ_vQueueCreate ( tszQueue*       psQueueHandle,
                               uint8*          pu8StartQueue )
 {
 #if ZIGBEE_USE_FRAMEWORK
+#if defined(K32W1480_SERIES) || defined(K32W1)
+        LIST_Init(&psQueueHandle->list,u32QueueLength);
+#else
         ListInit(&psQueueHandle->list,u32QueueLength);
+#endif
         psQueueHandle->u32ItemSize =  u32ItemSize;
 #else    
-        psQueueHandle->pvHead =  pu8StartQueue;
+        if (pu8StartQueue == NULL)
+        {
+        	psQueueHandle->pvHead = malloc(u32ItemSize * u32QueueLength);
+        }
+        else
+        {
+        	psQueueHandle->pvHead =  pu8StartQueue;
+        }
         psQueueHandle->u32ItemSize =  u32ItemSize;
         psQueueHandle->u32Length =  u32QueueLength;
         psQueueHandle->pvWriteTo =  psQueueHandle->pvHead;
@@ -108,14 +137,25 @@ PUBLIC bool_t ZQ_bQueueSend ( void*          pvQueueHandle,
     OSA_InterruptDisable();
     tszQueue *psQueueHandle = (tszQueue *)pvQueueHandle;
     /* Put a message in a queue. */
+
+#if defined(K32W1480_SERIES) || defined(K32W1)
+    if(LIST_GetAvailableSize(&psQueueHandle->list) || (0 == psQueueHandle->list.max))
+#else
     if(ListGetAvailable(&psQueueHandle->list) || (0 == psQueueHandle->list.max))
+#endif
     {
         void* pMsg = ZB_BufferAlloc(psQueueHandle->u32ItemSize);
         if(pMsg)
         {
             FLib_MemCpy(pMsg, (void*)pvItemToQueue, psQueueHandle->u32ItemSize);
+
             /* Put a message in a queue. */
+#if defined(K32W1480_SERIES) || defined(K32W1)
+            MSG_QueueAddTail(&psQueueHandle->list, pMsg);
+#else
             MSG_Queue(&psQueueHandle->list, pMsg);
+#endif
+
             /* Increase power manager activity count */
             PWRM_eStartActivity();     
             OSA_InterruptEnable();
@@ -134,7 +174,7 @@ PUBLIC bool_t ZQ_bQueueSend ( void*          pvQueueHandle,
         DBG_vPrintf(TRACE_ZQUEUE, "ZQ: Queue overflow: Handle=%08x\n", (uint32)pvQueueHandle);
     }
     else
-    {        
+    {
         if( psQueueHandle->pvWriteTo >= (psQueueHandle->pvHead+(psQueueHandle->u32Length*psQueueHandle->u32ItemSize)))
         {
              psQueueHandle->pvWriteTo = psQueueHandle->pvHead;
@@ -142,7 +182,7 @@ PUBLIC bool_t ZQ_bQueueSend ( void*          pvQueueHandle,
         ( void ) memcpy( psQueueHandle->pvWriteTo, pvItemToQueue, psQueueHandle->u32ItemSize );
         psQueueHandle->u32MessageWaiting++;
         psQueueHandle->pvWriteTo += psQueueHandle->u32ItemSize;
-        
+
         /* Increase power manager activity count */
         PWRM_eStartActivity();        
         bReturn = TRUE;
@@ -158,9 +198,18 @@ PUBLIC bool_t ZQ_bQueueReceive ( void*    pvQueueHandle,
 #if ZIGBEE_USE_FRAMEWORK
     OSA_InterruptDisable();
     tszQueue *psQueueHandle = (tszQueue *)pvQueueHandle;
+
+#if defined(K32W1480_SERIES) || defined(K32W1)
+    if( MSG_QueueGetHead(&psQueueHandle->list))
+#else
     if( MSG_Pending(&psQueueHandle->list))
+#endif
     {
+#if defined(K32W1480_SERIES) || defined(K32W1)
+        void* pMsg = MSG_QueueRemoveHead(&psQueueHandle->list);
+#else
         void* pMsg = MSG_DeQueue(&psQueueHandle->list);
+#endif
         FLib_MemCpy( pvItemFromQueue, pMsg, psQueueHandle->u32ItemSize );
         MSG_Free(pMsg);
         /* Decrease power manager activity count */
@@ -251,7 +300,11 @@ PUBLIC void* ZQ_pvGetFirstElementOnQueue ( void* pvQueueHandle )
 {
     
 #if ZIGBEE_USE_FRAMEWORK
+#if defined(K32W1480_SERIES) || defined(K32W1)
+	return LIST_GetHead(&((tszQueue *)pvQueueHandle)->list);
+#else
 	return ListGetHeadMsg(&((tszQueue *)pvQueueHandle)->list);
+#endif
 #else
     uint32 u32Store;
     void* pvReadFrom = NULL;
@@ -274,7 +327,11 @@ PUBLIC void* ZQ_pvGetNextElementOnQueue ( void* pvQueueHandle, void* pvMsg )
 	
 #if ZIGBEE_USE_FRAMEWORK
     void* pvReadFrom = NULL;
+#if defined(K32W1480_SERIES) || defined(K32W1)
+    pvReadFrom = LIST_GetNext(pvMsg);
+#else
     pvReadFrom = ListGetNextMsg(pvMsg);
+#endif
 	return pvReadFrom;
 #else
     uint32 u32Store;
@@ -292,6 +349,21 @@ PUBLIC void* ZQ_pvGetNextElementOnQueue ( void* pvQueueHandle, void* pvMsg )
     return pvMsg;
 #endif
 }
+#ifdef NCP_HOST
+PUBLIC void ZQ_bQueueFlush (void *pvQueueHandle)
+{
+    uint32 u32Store;
+    tszQueue *psQueueHandle = (tszQueue *)pvQueueHandle;
+
+    MICRO_DISABLE_AND_SAVE_INTERRUPTS(u32Store);
+
+    psQueueHandle->pvWriteTo =  psQueueHandle->pvHead;
+    psQueueHandle->u32MessageWaiting =  0;
+    psQueueHandle->pvReadFrom =  psQueueHandle->pvHead;
+
+    MICRO_RESTORE_INTERRUPTS(u32Store);
+}
+#endif
 /****************************************************************************/
 /***        END OF FILE                                                   ***/
 /****************************************************************************/

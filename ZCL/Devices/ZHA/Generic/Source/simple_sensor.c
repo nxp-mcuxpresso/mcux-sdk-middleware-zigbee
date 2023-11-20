@@ -44,7 +44,7 @@
 #include "DeviceTemperatureConfiguration.h"
 #include "Alarms.h"
 #include "simple_sensor.h"
-#include "Time.h"
+#include "ZclTime.h"
 #ifdef CLD_POLL_CONTROL
     #include "PollControl.h"
 #endif

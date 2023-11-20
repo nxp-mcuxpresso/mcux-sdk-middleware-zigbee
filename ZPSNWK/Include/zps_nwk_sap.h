@@ -471,6 +471,10 @@ typedef enum
     ZPS_NWK_ST_NETWORK_ADDRESS_UPDATE,        /**< Network address update (0x10) */
     ZPS_NWK_ST_BAD_FRAME_COUNTER,             /**< Bad frame counter (0x11) */
     ZPS_NWK_ST_BAD_KEY_SEQ_NUMBER,            /**< Bad key sequence number (0x12) */
+#ifdef R23_UPDATES
+    ZPS_NWK_ST_UNKNOWN_COMMAND,               /**< Unknown Command (0x13) */
+    ZPS_NWK_ST_PAN_ID_CONFLICT_REPORT,        /**< PAN ID Conflict Report (0x14) */
+#endif
 } ZPS_teNwkStatus;
 
 /**
@@ -532,12 +536,34 @@ typedef enum
 {
     ZPS_NWK_REJOIN_ASSOC_JOIN = 0,            /**< Join a network using the MAC association procedure */
     ZPS_NWK_REJOIN_ORPHAN_REJOIN,             /**< Join or rejoin a network using the orphaning procedure */
+#ifdef R23_UPDATES
+    ZPS_NWK_REJOIN_NWK_UNSEC_REJOIN =         /**< Unsecured Join or rejoin a network using the NWK rejoin procedure */
+            ZPS_NWK_REJOIN_ORPHAN_REJOIN,
+#endif
     ZPS_NWK_REJOIN_NWK_REJOIN,                /**< Join or rejoin a network using the NWK rejoin procedure */
     ZPS_NWK_REJOIN_CHG_CHAN,                  /**< Switch the operating channel for a device that is joined to a network */
     ZPS_NWK_REJOIN_NO_DISC,                   /**< Rejoin process without discovery and back to parent*/
     ZPS_NWK_REJOIN_NO_DISC_TRY_NEXT_PARENT,   /**< Rejoin process without discovery try next potential parent */
+#ifdef R23_UPDATES
+    ZPS_NWK_COMMISSION_INIT_JOIN,             /**< Join a network using the NWK commissioning procedure */
+#endif
     NUM_ZPS_NWK_REJOIN
 } ZPS_teNwkRejoin;
+
+#ifdef R23_UPDATES
+/**
+ * @ingroup g_zps_nwk_sap
+ * @brief ZPS NWK Commissioning type enumeration.
+ *
+ * Enumeration of NWK Commissioning type enumeration
+ */
+typedef enum
+{
+    ZPS_NWK_COMMISSION_JOIN = 0,            /**< Initial Join */
+    ZPS_NWK_COMMISSION_REJOIN = 1,          /**< Rejoin */
+    ZPS_NWK_COMMISSION_VS_REJOIN = 32,      /**< R22 Legacy Rejoin */
+} ZPS_teNwkCommissionType;
+#endif
 
 /**
  * @ingroup g_zps_nwk_sap
@@ -1121,8 +1147,14 @@ typedef struct
     uint64 u64ExtAddr;     /**< Device's IEEE address */
     uint16 u16NwkAddr;     /**< Extended address of device wishing to associate */
     uint8  u8Capability;   /**< Device capabilities */
+#ifdef R23_UPDATES
+    uint8  u8MacID;        /**< Index in the MAC interface table */
+    uint8  u8JoinerMethod; /**< The nature of the join or rejoin */
+    PDUM_thNPdu hNPdu;     /**< NPDU with Joiner Encaps TLV */
+#else
     uint8  u8Rejoin;       /**< The nature of the join or rejoin */
     uint8  u8SecureRejoin; /**< Indicates if the rejoin was a secure rejoin */
+#endif
 } ZPS_tsNwkNlmeIndJoin;
 
 /**
@@ -1168,6 +1200,11 @@ typedef struct
     uint8       u8NPduOffset;
     uint8       u8Cmd;
 }ZPS_tsNwkNlmeIndTlv;
+
+typedef struct
+{
+    uint16       u16PanId;
+}ZPS_tsNwkNlmeIndStagePanID;
 
 typedef enum
 {
@@ -1394,6 +1431,7 @@ typedef enum
     ZPS_NWK_NLME_IND_ROUTE_RECORD,       /**< Use with ZPS_tsNwkNlmeCfmRouteRecord */
     ZPS_NWK_NLME_IND_FC_OVERFLOW,        /**< Use with ZPS_tsNwkNlmeCfmFCOverflow */
     ZPS_NWK_NLME_IND_TLV,                /**< Use with ZPS_tsNwkNlmeIndTlv */
+    ZPS_NWK_NLME_IND_STAGE_PAN_ID,       /**< Use with ZPS_tsNwkNlmeIndStagePanID*/
     ZPS_NWK_NLME_DCFM_ACTIVE_DISCOVERY,
     NUM_ZPS_NWK_NLME_DCFM_IND
 } ZPS_teNwkNlmeDcfmIndType;
@@ -1424,6 +1462,7 @@ typedef union
     ZPS_tsNwkNlmeCfmRouteRecord      sCfmRouteRecord;       /**< Route Record Received confirm */
     ZPS_tsNwkNlmeCfmFCOverflow       sCfmFCOverflow;        /**< FC overflow */
     ZPS_tsNwkNlmeIndTlv              sIndTlv;               /**< Incoming TLV indication */
+    ZPS_tsNwkNlmeIndStagePanID       sIndStagePanID;         /**< Stage PAN ID */
 } ZPS_tuNlmeDcfmIndParam;
 
 /**

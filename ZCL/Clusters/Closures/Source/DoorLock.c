@@ -128,7 +128,7 @@ const tsZCL_AttributeDefinition asCLD_DoorLockClusterAttributeDefinitions[] = {
     tsZCL_SceneExtensionTable sCLD_DoorLockSceneExtensionTable = {
             eCLD_DoorLockSceneEventHandler,
             1,
-            {E_CLD_DOOR_LOCK_ATTR_ID_LOCK_STATE, E_ZCL_ENUM8}
+            {{E_CLD_DOOR_LOCK_ATTR_ID_LOCK_STATE, E_ZCL_ENUM8}}
     };
 
     tsZCL_ClusterDefinition sCLD_DoorLock = {

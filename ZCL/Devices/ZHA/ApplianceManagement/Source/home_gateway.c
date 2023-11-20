@@ -38,7 +38,7 @@
 #include "zcl.h"
 #include "zcl_options.h"
 #include "home_gateway.h"
-#include "Time.h"
+#include "ZclTime.h"
 #ifdef CLD_POLL_CONTROL
     #include "PollControl.h"
 #endif

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -47,7 +47,6 @@
 #include <rnd_pub.h>
 #include "ZTimer.h"
 #include "bdb_tl.h"
-#include "app_events.h"
 #include "app_common.h"
 #include "Log.h"
 /****************************************************************************/
@@ -98,7 +97,6 @@
 
 
 
-#define TL_SCAN_LQI_MIN    (110)
 
 
 /****************************************************************************/
@@ -407,7 +405,7 @@ PUBLIC void BDB_vTlStateMachine( tsBDB_ZCLEvent *psEvent)
                 DBG_vPrintf(TRACE_SCAN_REQ, "Start scan Prim %08x Second %08x\n",BDBC_TL_PRIMARY_CHANNEL_SET ,
                         BDBC_TL_SECONDARY_CHANNEL_SET );
 
-                eAppApiPlmeGet(PHY_PIB_ATTR_CURRENT_CHANNEL, &u32LogicalChannel);
+                ZPS_eMacPlmeGet(PHY_PIB_ATTR_CURRENT_CHANNEL, &u32LogicalChannel);
                 if (u32LogicalChannel != sZllState.u8MyChannel)
                 {
                     sZllState.u8MyChannel = u32LogicalChannel;

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -49,13 +49,12 @@
 #include "zll_commission.h"
 
 
-
+#include "app_common.h"
 #include "app_main.h"
 
 #include "app_led_control.h"
 #include "zlo_controller_node.h"
 
-#include "app_events.h"
 #include "zcl_customcommand.h"
 #include "mac_sap.h"
 #include "ZTimer.h"
@@ -104,7 +103,6 @@ TRACE_SCAN_REQ                TRUE
 /****************************************************************************/
 
 #define ADJUST_POWER        TRUE
-#define TL_SCAN_LQI_MIN    (110)
 #define RSSI_CORRECTION    (10)
 
 
@@ -381,14 +379,14 @@ PUBLIC void BDB_vTlStateMachine( tsBDB_ZCLEvent *psEvent)
                 sCommission.eState = E_SCANNING;
                 sCommission.u32TransactionId = RND_u32GetRand(1, 0xffffffff);
                 DBG_vPrintf(TRACE_COMMISSION, "\r\nRxIdle True");
-
-                MAC_vPibSetRxOnWhenIdle( NULL, TRUE, FALSE);
-
+                ZPS_vMacPibSetRxOnWhenIdle(TRUE, FALSE);
                 sCommission.bResponded = FALSE;
                /* if device has been scanning to rejoin, due to parent removed, don't update channel */
                if(sBDB.sAttrib.ebdbCommissioningStatus != E_BDB_COMMISSIONING_STATUS_IN_PROGRESS)
                {
-                   eAppApiPlmeGet(PHY_PIB_ATTR_CURRENT_CHANNEL, &u32LogicalChannel);
+
+                   ZPS_eMacPlmeGet(PHY_PIB_ATTR_CURRENT_CHANNEL, &u32LogicalChannel);
+
                    if (u32LogicalChannel != sZllState.u8MyChannel)
                    {
                        sZllState.u8MyChannel = u32LogicalChannel;
@@ -980,9 +978,7 @@ jumpHere:
                 #endif
 
                 DBG_vPrintf(TRACE_COMMISSION, "\r\nRxIdle False");
-
-                MAC_vPibSetRxOnWhenIdle(NULL, FALSE, FALSE);
-
+                ZPS_vMacPibSetRxOnWhenIdle(FALSE, FALSE);
                 if ( sZllState.eState == FACTORY_NEW_REMOTE ) {
                     ZPS_eAplAibSetApsTrustCenterAddress( 0xffffffffffffffffULL );
                     sZllState.eState = NOT_FACTORY_NEW_REMOTE;
@@ -1093,7 +1089,7 @@ PRIVATE void vTlEndCommissioning( void* pvNwk, eState eState, uint16 u16TimeMS){
         ZTIMER_eStart(u8TimerBdbTl, ZTIMER_TIME_MSEC(u16TimeMS));
     }
     DBG_vPrintf(TRACE_COMMISSION, "\r\nRxIdle False");
-    MAC_vPibSetRxOnWhenIdle(NULL, FALSE, FALSE);
+    ZPS_vMacPibSetRxOnWhenIdle(FALSE, FALSE);
     if (sZllState.eState == NOT_FACTORY_NEW_REMOTE) {
         vStartPolling();
     }

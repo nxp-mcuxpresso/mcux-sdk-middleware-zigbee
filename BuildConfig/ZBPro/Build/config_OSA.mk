@@ -44,9 +44,9 @@ CFLAGS  += -DosNumberOfSemaphores=0
 CFLAGS  += -DosNumberOfMutexes=0
 CFLAGS  += -DosNumberOfMessageQs=0
 CFLAGS  += -DosNumberOfMessages=0
-CFLAGS  += -DosNumberOfEvents=0
+CFLAGS  += -DosNumberOfEvents=5
 CFLAGS  += -DgMainThreadStackSize_c=0
-CFLAGS  += -DgMainThreadPriority_c=0
+CFLAGS  += -DgMainThreadPriority_c=7
 CFLAGS  += -DgTaskMultipleInstancesManagement_c=0
 CFLAGS  += -DFSL_OSA_BM_TIMER_CONFIG=FSL_OSA_BM_TIMER_SYSTICK
 endif

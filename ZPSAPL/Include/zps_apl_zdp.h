@@ -121,8 +121,11 @@
 #define ZPS_ZDP_SECURITY_GET_AUTH_LVL_REQ_CLUSTER_ID        (0x0042)
 #define ZPS_ZDP_SECURITY_SET_CONFIG_REQ_CLUSTER_ID          (0x0043)
 #define ZPS_ZDP_SECURITY_GET_CONFIG_REQ_CLUSTER_ID          (0x0044)
-#define ZPS_ZDP_SECURITY_DECOMMISSION_REQ_CLUSTER_ID         (0x0046)
+#define ZPS_ZDP_SECURITY_DECOMMISSION_REQ_CLUSTER_ID        (0x0046)
+#define ZPS_ZDP_SECURITY_CHALLENGE_REQ_CLUSTER_ID           (0x0047)
 #endif
+
+#define ZPS_ZDP_MAX_REQ_CLUSTER_ID                          (0x7FFF)
 
 /****************************************************************************/
 /* ZDP Responses                                                            */
@@ -196,6 +199,7 @@
 #define ZPS_ZDP_SECURITY_SET_CONFIG_RSP_CLUSTER_ID          (0x8043)
 #define ZPS_ZDP_SECURITY_GET_CONFIG_RSP_CLUSTER_ID          (0x8044)
 #define ZPS_ZDP_SECURITY_DECOMMISSION_RSP_CLUSTER_ID        (0x8046)
+#define ZPS_ZDP_SECURITY_CHALLENGE_RSP_CLUSTER_ID           (0x8047)
 #endif
 
 /* Maximum payload size possible for a ZDP message */
@@ -357,11 +361,13 @@ typedef struct {
     /* ZPS_teZdoDeviceType */
     unsigned eFrequencyBand    : 5;
     unsigned eApsFlags         : 3;
-    unsigned eReserved         : 3; /* reserved */
 #ifndef R23_UPDATES
+    unsigned eReserved         : 3; /* reserved */
     unsigned bUserDescAvail    : 1;
     unsigned bComplexDescAvail : 1;
 #else
+    unsigned eReserved         : 2; /* reserved */
+    unsigned bFragSupport      : 1;
     unsigned                   : 2; /* reserved */
 #endif
     unsigned eLogicalType      : 3;
@@ -373,10 +379,12 @@ typedef struct {
 #ifndef R23_UPDATES
     unsigned bComplexDescAvail : 1;
     unsigned bUserDescAvail    : 1;
+    unsigned eReserved         : 3; /* reserved */
 #else
     unsigned                   : 2; /* reserved */
+    unsigned bFragSupport      : 1;
+    unsigned eReserved         : 2; /* reserved */
 #endif
-    unsigned eReserved         : 3; /* reserved */
     unsigned eApsFlags         : 3;
     unsigned eFrequencyBand    : 5;
 }ZPS_tsAplZdpNodeDescBitFields;
@@ -757,6 +765,10 @@ typedef struct {
     uint8 u8TlvCount;
     uint64 *pu64TlvId;
 } ZPS_tsAplZdpSecurityDecommissionReq;
+
+typedef struct {
+    uint64 u64SenderEUI;
+} ZPS_tsAplZdpSecurityChallengeReq;
 #endif
 
 /****************************************************************************/
@@ -1041,6 +1053,8 @@ typedef struct {
 #ifdef R23_UPDATES
 typedef struct {
     uint8 u8Status;
+    tuBeaconSurveyResults sTlvResults;
+    tuPotentialParents sTlvParents;
 } ZPS_tsAplZdpMgmtNwkBeaconSurveyRsp;
 #endif
 
@@ -1207,6 +1221,11 @@ typedef struct {
 typedef struct {
     uint8 u8OverallStatus;
 } ZPS_tsAplZdpSecurityDecommissionRsp;
+
+typedef struct {
+    uint8                  u8OverallStatus;
+    tuApsFrameCounterResponse *psTlv;
+} ZPS_tsAplZdpSecurityChallengeRsp;
 #endif
 
 typedef struct {
@@ -1685,6 +1704,14 @@ PUBLIC ZPS_teStatus zps_eAplZdpSecurityDecommissionRequest(
     bool bExtAddr,
     uint8 *pu8SeqNumber,
     tuDeviceEUI64List *psTlvDeviceEUI64ListReq);
+
+PUBLIC ZPS_teStatus zps_eAplZdpSecurityChallengeRequest(
+    void *pvApl,
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    ZPS_tsAplZdpSecurityChallengeReq *psZdpSecuritychallengeReq);
 #endif
 
 /****************************************************************************/
@@ -2513,6 +2540,22 @@ ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityGetAuthLvlRequest(
     return zps_eAplZdpSecurityGetAuthLvlRequest(ZPS_pvAplZdoGetAplHandle(), hAPduInst,
             uDstAddr, bExtAddr, pu8SeqNumber, psZdpSecurityGetAuthLvlReq);
 }
+ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityChallengeRequest(
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+    ZPS_tsAplZdpSecurityChallengeReq *psZdpSecurityChallengeReq) ZPS_ZDP_ALWAYS_INLINE;
+ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityChallengeRequest(
+    PDUM_thAPduInstance hAPduInst,
+    ZPS_tuAddress uDstAddr,
+    bool bExtAddr,
+    uint8 *pu8SeqNumber,
+        ZPS_tsAplZdpSecurityChallengeReq *psZdpSecurityChallengeReq)
+{
+    return zps_eAplZdpSecurityChallengeRequest(ZPS_pvAplZdoGetAplHandle(), hAPduInst,
+            uDstAddr, bExtAddr, pu8SeqNumber, psZdpSecurityChallengeReq);
+}
 
 ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityDecommissionRequest(
     PDUM_thAPduInstance hAPduInst,
@@ -2529,6 +2572,7 @@ ZPS_APL_INLINE ZPS_teStatus ZPS_eAplZdpSecurityDecommissionRequest(
 {
     return zps_eAplZdpSecurityDecommissionRequest(ZPS_pvAplZdoGetAplHandle(), hAPduInst,
             uDstAddr, bExtAddr, pu8SeqNumber, psTlvDeviceEUI64ListReq);
+
 }
 #endif
 

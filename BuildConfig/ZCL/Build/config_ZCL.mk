@@ -36,19 +36,12 @@
 RAMOPT ?= 0
 OTA    ?= 0
 # Get ZigBee stack makefile requirements
-ifneq ($(JENNIC_CHIP_FAMILY),JN518x)
-include $(STACK_BASE_DIR)/ZBPro/Build/config_ZBPro.mk
-else
-ifeq ($(FRAMEWORK_SWITCH),0)
-include $(SDK2_BASE_DIR)/middleware/wireless/zigbee3.0/BuildConfig/ZBPro/Build/config_ZBPro.mk
-else
-include $(SDK2_BASE_DIR)/middleware/wireless/zigbee/BuildConfig/ZBPro/Build/config_ZBPro.mk
-endif
-endif
+include $(SDK_BASE_DIR)/middleware/wireless/zigbee/BuildConfig/ZBPro/Build/config_ZBPro.mk
+
 ###############################################################################
-ZCIF_BASE        = $(COMPONENTS_BASE_DIR)/ZCIF
+ZCIF_BASE        = $(ZIGBEE_BASE_DIR)/ZCIF
 ZCIF_SRC         = $(ZCIF_BASE)/Source
-ZCL_BASE         = $(COMPONENTS_BASE_DIR)/ZCL
+ZCL_BASE         = $(ZIGBEE_BASE_DIR)/ZCL
 CLUSTERS_BASE    = $(ZCL_BASE)/Clusters
 DEVICES_BASE     = $(ZCL_BASE)/Devices
 
@@ -103,7 +96,6 @@ DEVICES_GP_SRC                          = $(DEVICES_BASE)/ZGP/Source
 endif
 
 DEVICES_GENERIC_SRC                     = $(DEVICES_BASE)/ZHA/Generic/Source
-
 CLUSTERS_SRC_DIRS                       = $(CLUSTERS_GENERAL_SRC):$(CLUSTERS_MEASUREMENT_AND_SENSING_SRC):$(CLUSTER_LIGHTING_SRC):$(CLUSTERS_HVAC_SRC):$(CLUSTERS_CLOSURES_SRC):$(CLUSTERS_SECURITY_AND_SAFETY_SRC):$(CLUSTERS_SMART_ENERGY_SRC):$(CLUSTERS_OTA_SRC):$(CLUSTERS_COMMISSIOING_SRC):$(CLUSTERS_APPLIANCE_MANAGEMENT_SRC):$(CLUSTERS_GREENPOWER_SRC)
 DEVICES_SRC_DIRS                        = $(DEVICES_GENERIC_SRC):$(DEVICES_ZLO_SRC):$(DEVICES_HVAC_SRC):$(DEVICES_CLOSURES_SRC):$(DEVICES_SECURITY_AND_SAFETY_SRC):$(DEVICES_SMART_ENERGY_SRC):$(DEVICES_APPLIANCE_MANAGEMENT_SRC):$(DEVICES_GP_SRC)
 ZCL_SRC_DIRS                            = $(ZCIF_SRC):$(CLUSTERS_SRC_DIRS):$(DEVICES_SRC_DIRS)

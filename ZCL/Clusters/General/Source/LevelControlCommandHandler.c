@@ -541,12 +541,10 @@ PRIVATE  teZCL_Status eCLD_LevelControlHandleStepCommand(
                             tsZCL_ClusterInstance       *psClusterInstance,
                             uint8                       u8CommandIdentifier)
 {
-
     teZCL_Status eStatus;
     tsCLD_LevelControl_StepCommandPayload sPayload = {0};
     uint8   u8TransactionSequenceNumber;
     tsCLD_LevelControlCustomDataStructure *psCommon;
-    tsCLD_LevelControl *psSharedStruct;
     
     #if ((defined CLD_ONOFF) && (defined ONOFF_SERVER))
         bool_t bOnOff;
@@ -555,9 +553,6 @@ PRIVATE  teZCL_Status eCLD_LevelControlHandleStepCommand(
     /* Get pointer to custom data structure */
     psCommon = (tsCLD_LevelControlCustomDataStructure*)psClusterInstance->pvEndPointCustomStructPtr;
 
-    /* Get pointer to shared data structure */
-    psSharedStruct = (tsCLD_LevelControl*)psClusterInstance->pvEndPointSharedStructPtr;
-    
     DBG_vPrintf(TRACE_LEVEL_CONTROL, "eCLD_LevelControlCommandStepCommandReceive:");
 
     /* Receive the command */
@@ -577,6 +572,11 @@ PRIVATE  teZCL_Status eCLD_LevelControlHandleStepCommand(
      * cluster is equal to 0x00, the command shall be ignored.
      */
 #if ((defined CLD_ONOFF) && (defined ONOFF_SERVER))
+
+    /* Get pointer to shared data structure */
+    tsCLD_LevelControl *psSharedStruct;
+    psSharedStruct = (tsCLD_LevelControl*)psClusterInstance->pvEndPointSharedStructPtr;
+
     if(u8CommandIdentifier == E_CLD_LEVELCONTROL_CMD_STEP)
     {
         /* Get pointer to shared struct in On/Off cluster */

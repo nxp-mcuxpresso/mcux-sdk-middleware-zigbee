@@ -181,7 +181,7 @@ PUBLIC  teZCL_Status eCLD_IdentifyCommandTriggerEffectSend(
                                     uint8           u8DestinationEndPointId,
                                     tsZCL_Address   *psDestinationAddress,
                                     uint8           *pu8TransactionSequenceNumber,
-                                    uint8           u8EffectId,
+									teCLD_Identify_EffectId           u8EffectId,
                                     uint8           u8EffectVarient)
 {
 

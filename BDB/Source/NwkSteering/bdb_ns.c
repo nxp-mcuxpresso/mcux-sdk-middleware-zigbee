@@ -354,7 +354,7 @@ PUBLIC void BDB_vNsStateMachine(BDB_tsZpsAfEvent *psZpsAfEvent)
             {
                 case ZPS_EVENT_TC_STATUS:
                     if ( (psZpsAfEvent->sStackEvent.uEvent.sApsTcEvent.u8Status == ZPS_APL_APS_E_SECURED_LINK_KEY) &&
-                         (psZpsAfEvent->sStackEvent.uEvent.sApsTcEvent.uTcData.u64ExtendedAddress == ZPS_psAplAibGetAib()->u64ApsTrustCenterAddress) )
+                         (psZpsAfEvent->sStackEvent.uEvent.sApsTcEvent.uTcData.u64ExtendedAddress == ZPS_eAplAibGetApsTrustCenterAddress()) )
                     {
                         DBG_vPrintf(TRACE_BDB,"ZPS_EVENT_TC_STATUS Received Transport Key from TC\n");
                         eNS_State = E_NS_TCLK_WAIT_SEND_VER_KEY;
@@ -434,7 +434,7 @@ PUBLIC void BDB_vNsTimerCb(void *pvParam)
         case E_NS_WAIT_AFTER_NWK_JOIN:
             DBG_vPrintf(TRACE_BDB, "BDB: BDB_vNsTimerCb 1\n");
 
-            if(ZPS_psAplAibGetAib()->u64ApsTrustCenterAddress == 0xFFFFFFFFFFFFFFFFULL)
+            if( ZPS_eAplAibGetApsTrustCenterAddress() == 0xFFFFFFFFFFFFFFFFULL)
             {
                 eNS_State = E_NS_IDLE;
                 vNsAfterNwkJoin();
@@ -627,8 +627,8 @@ PRIVATE void vNsTryNwkJoin(bool_t bStartWithIndex0,
     while(u8NwkIndex < u8NumOfNwks)
     {
         if((pNwkDescr[u8NwkIndex].u8PermitJoining) && \
-           ((0 == ZPS_psAplAibGetAib()->u64ApsUseExtendedPanid) ||\
-            (pNwkDescr[u8NwkIndex].u64ExtPanId == ZPS_psAplAibGetAib()->u64ApsUseExtendedPanid)))
+           ((0 == ZPS_u64AplAibGetApsUseExtendedPanId()) ||\
+            (pNwkDescr[u8NwkIndex].u64ExtPanId == ZPS_u64AplAibGetApsUseExtendedPanId())))
         {
             /* 8.3-6 The node SHALL attempt to join the network found using MAC association. */
 
@@ -849,7 +849,7 @@ PRIVATE void vNsTclkSendNodeDescReq(void)
         ZPS_tsAplZdpNodeDescReq sNodeDescReq;
         uint8 u8SeqNumber;
         ZPS_tuAddress uDstAddr;
-        uDstAddr.u16Addr = ZPS_u16AplZdoLookupAddr(ZPS_psAplAibGetAib()->u64ApsTrustCenterAddress);
+        uDstAddr.u16Addr = ZPS_u16AplZdoLookupAddr(ZPS_eAplAibGetApsTrustCenterAddress());
         /* always send to node of interest rather than a cache */
 
 
@@ -913,7 +913,7 @@ PRIVATE void vNsTclkSendReqKey(void)
  ****************************************************************************/
 PRIVATE void vNsTclkResendVerKey(void)
 {
-    ZPS_eAfVerifyKeyReqRsp(ZPS_psAplAibGetAib()->u64ApsTrustCenterAddress, 4 /*ZPS_APL_REQ_KEY_TC_LINK_KEY*/);
+	ZPS_eAfVerifyKeyReqRsp(ZPS_eAplAibGetApsTrustCenterAddress(), 4 /*ZPS_APL_REQ_KEY_TC_LINK_KEY*/);
     ZTIMER_eStart(u8TimerBdbNs, ZTIMER_TIME_MSEC(BDBC_TC_LINK_KEY_EXCHANGE_TIMEOUT*1000));
     sBDB.sAttrib.u8bdbTCLinkKeyExchangeAttempts++;
 }

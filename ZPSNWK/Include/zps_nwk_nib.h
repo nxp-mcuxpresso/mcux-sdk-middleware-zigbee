@@ -711,6 +711,9 @@ typedef struct
     uint8  u8ZedTimeout;
     uint8  u8ZedTimeoutDefault;                              /** nwkEndDeviceTimeoutDefault **/
     uint16 u16VerifyLinkCostTransmitRate;                   /** nwkVerifyLinkCostTransmitRate 0-65535 **/
+#if defined(R23_UPDATES) || defined(WWAH_SUPPORT)
+    uint16 u16NextPanId;                                    /**< nwkNextPanId */
+#endif
 
     /**** Initial values described in struct above end here ****/
     uint8  u8ReportConstantCost;                            /**< nwkReportConstantCost */ /* Potential const */
@@ -743,16 +746,27 @@ typedef struct
     uint16 u16RReqProcCompleted;                            /**< RX Route Request processing completed */
     uint16 u16DfcmDropped;                                  /**< Timed deferred confirms not delivered due to overflow */
 #ifdef R23_UPDATES
-    uint16 u16PanIdConflictCount;                            /**< nwkPanIdConflictCount */
+    uint16 u16PanIdConflictCount;                           /**< nwkPanIdConflictCount */
     uint32 u32NextChannelChange;                            /**< nwkNextChannelChange, channel page, default 0 */
 
     tsTlvGeneric *psNetworkWideBeaconAppendixTlvs;          /**< nwkNetworkWideBeaconAppendixTLVs */
     tsTlvGeneric *psDeviceBeaconPayloadTlvs;                /**< nwkDeviceBeaconPayloadTLVs */
     tsTlvGeneric *psZedTimeoutPayloadTlvs;                  /**< End Device Timeout Request TLVs */
+    tsTlvGeneric *psRouteRequestPayloadTlvs;                /**< Route Request TLVs */
+    tsTlvGeneric *psRouteReplyPayloadTlvs;                  /**< Route Reply TLVs */
+    tsTlvGeneric *psNetworkStatusPayloadTlvs;               /**< Network status TLVs */
+    tsTlvGeneric *psCommissionPayloadTlvs;                  /**< Nwk Commissioning TLVs */
     uint8         u8NetworkWideBeaconAppendixSize;          /**< Allocated size for nwkNetworkWideBeaconAppendixTLVs */
     uint8         u8DeviceBeaconTlvsSize;                   /**< Allocated size for nwkDeviceBeaconPayloadTLVs */
     uint8         u8ZedTimeoutTlvsSize;                     /**< Allocated size for End Device Timeout */
-    uint8         u8PerformAdditionalMacDataPollRetries;     /**< nwkPerformAdditionalMacDataPollRetries */
+    uint8         u8RouteRequestTlvsSize;                   /**< Allocated size for Route Request */
+    uint8         u8RouteReplyTlvsSize;                     /**< Allocated size for Route Reply */
+    uint8         u8NetworkStatusTlvsSize;                  /**< Allocated size for Route Reply */
+    uint8         u8CommissionTlvsSize;                     /**< Allocated size for Commission */
+    uint8         u8CommissionOffsetTlvJoinEncaps;          /**< Offset of the TLV Joiner Encaps */
+    uint8         u8CommissionOffsetTlvFragmParams;         /**< Offset of the TLV FRAGPARAMS */
+    uint8         u8CommissionOffsetTlvKeyNegotMeth;        /**< Offset of the TLV SUPPKEYNEGMETH */
+    uint8         u8PerformAdditionalMacDataPollRetries;    /**< nwkPerformAdditionalMacDataPollRetries */
     uint8         u8NumMacDataPollRetries;
 #endif
     /**** Tables ****/
@@ -880,6 +894,8 @@ ZPS_vNwkNibSetUpdateId(void *pvNwk,
 #ifdef R23_UPDATES
 PUBLIC void ZPS_vNwkNibSetBeaconAppendix(void *pvNwk, bool_t bWide, bool_t bSet,
                                          uint8 u8Size, tsTlvGeneric *psTlvs);
+PUBLIC void ZPS_vNwkNibSetCommissionAppendix(void *pvNwk, uint8 u8Size,
+                                             tsTlvGeneric *psTlvs);
 #endif
 
 PUBLIC void
@@ -1021,7 +1037,7 @@ PUBLIC void ZPS_vNwkSetAddrConflictCallback ( void* pvfn );
 PUBLIC void ZPS_vNwkSetOverrideConflictBehaviour (bool_t bResolvedConflictAllowed,
                                                   bool_t bNwkManagerDetectConflict);
 void ZPS_vNwkSinkAllDataForChildList(uint16* pu16DstList, uint16 u16Size);
-#ifdef WWAH_SUPPORT
+#if defined(WWAH_SUPPORT) || defined(R23_UPDATES)
 PUBLIC void ZPS_vAplSetResolutionPanId ( uint16 u16PanId );
 PUBLIC uint16 ZPS_u16AplGetResolutionPanId ( void );
 PUBLIC void ZPS_vNwkNibSetPriorityParent( uint8 u8BitMask );

@@ -55,7 +55,7 @@
 #ifdef CLD_OTA
 #include "OTA.h"
 #endif
-#include "Time.h"
+#include "ZclTime.h"
 #ifdef CLD_POLL_CONTROL
     #include "PollControl.h"
 #endif

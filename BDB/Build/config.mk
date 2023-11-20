@@ -35,11 +35,11 @@
 ###############################################################################
 # General Include and Source
 RAMOPT ?= 0
-BDB_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Include
+BDB_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Include
 INCFLAGS += -I$(BDB_INC_DIR)
-BDB_COMN_INC_DIR += $(COMPONENTS_BASE_DIR)/BDB/Source/Common
+BDB_COMN_INC_DIR += $(ZIGBEE_BASE_DIR)/BDB/Source/Common
 INCFLAGS += -I$(BDB_COMN_INC_DIR)
-BDB_COMN_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/Common
+BDB_COMN_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/Common
 COMN_SRC := $(shell cd $(BDB_COMN_SRC_DIR); ls *.c)
 ifeq ($(RAMOPT), 1)
 ZCLAPPSRC += $(COMN_SRC)
@@ -49,8 +49,8 @@ endif
 
 ifeq ($(JENNIC_CHIP_FAMILY),$(filter $(JENNIC_CHIP_FAMILY),JN517x JN516x)) 
 # ZigBee Common Include and Source
-ZIGBEE_COMN_INC_DIR = $(COMPONENTS_BASE_DIR)/ZigbeeCommon/Include
-ZIGBEE_COMN_SRC_DIR = $(COMPONENTS_BASE_DIR)/ZigbeeCommon/Source
+ZIGBEE_COMN_INC_DIR = $(ZIGBEE_BASE_DIR)/ZigbeeCommon/Include
+ZIGBEE_COMN_SRC_DIR = $(ZIGBEE_BASE_DIR)/ZigbeeCommon/Source
 ZIGBEE_COMN_SRC += appZpsBeaconHandler.c 
 ZIGBEE_COMN_SRC += appZdpExtraction.c
 APPSRC += $(ZIGBEE_COMN_SRC)
@@ -67,8 +67,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_NWK_STEERING), 1)
 CFLAGS += -DBDB_SUPPORT_NWK_STEERING
-BDB_NS_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/NwkSteering
-BDB_NS_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/NwkSteering
+BDB_NS_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/NwkSteering
+BDB_NS_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/NwkSteering
 INCFLAGS += -I$(BDB_NS_INC_DIR)
 NS_SRC := $(shell cd $(BDB_NS_SRC_DIR); ls *.c)
 ifeq ($(RAMOPT), 1)
@@ -80,8 +80,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_NWK_FORMATION), 1)
 CFLAGS += -DBDB_SUPPORT_NWK_FORMATION
-BDB_NF_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/NwkFormation
-BDB_NF_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/NwkFormation
+BDB_NF_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/NwkFormation
+BDB_NF_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/NwkFormation
 INCFLAGS += -I$(BDB_NF_INC_DIR)
 NF_SRC := $(shell cd $(BDB_NF_SRC_DIR); ls *.c)
 ifeq ($(RAMOPT), 1)
@@ -93,8 +93,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_TOUCHLINK_INITIATOR_END_DEVICE), 1)
 CFLAGS += -DBDB_SUPPORT_TOUCHLINK
-BDB_TL_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/TouchLink
-BDB_TL_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/TouchLink
+BDB_TL_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/TouchLink
+BDB_TL_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/TouchLink
 INCFLAGS += -I$(BDB_TL_INC_DIR)
 TL_SRC = bdb_tl_end_device_initiator_target.c
 TL_SRC += bdb_tl_common.c
@@ -108,8 +108,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_TOUCHLINK_INITIATOR_ROUTER), 1)
 CFLAGS += -DBDB_SUPPORT_TOUCHLINK
-BDB_TL_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/TouchLink
-BDB_TL_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/TouchLink
+BDB_TL_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/TouchLink
+BDB_TL_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/TouchLink
 INCFLAGS += -I$(BDB_TL_INC_DIR)
 TL_SRC = bdb_tl_router_initiator_target.c
 TL_SRC += bdb_tl_common.c
@@ -123,8 +123,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_TOUCHLINK_TARGET), 1)
 CFLAGS += -DBDB_SUPPORT_TOUCHLINK
-BDB_TL_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/TouchLink
-BDB_TL_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/TouchLink
+BDB_TL_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/TouchLink
+BDB_TL_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/TouchLink
 INCFLAGS += -I$(BDB_TL_INC_DIR)
 TL_SRC = bdb_tl_router_target.c
 TL_SRC += bdb_tl_common.c
@@ -138,8 +138,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_FIND_AND_BIND_INITIATOR), 1)
 CFLAGS += -DBDB_SUPPORT_FIND_AND_BIND_INITIATOR
-BDB_FB_INI_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/FindAndBind
-BDB_FB_INI_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/FindAndBind
+BDB_FB_INI_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/FindAndBind
+BDB_FB_INI_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/FindAndBind
 INCFLAGS += -I$(BDB_FB_INI_INC_DIR)
 ifneq ($(BDB_SUPPORT_FIND_AND_BIND_TARGET), 1)
     FB_INI_SRC = bdb_fb_common.c
@@ -154,8 +154,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_FIND_AND_BIND_TARGET), 1)
 CFLAGS += -DBDB_SUPPORT_FIND_AND_BIND_TARGET
-BDB_FB_TAR_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/FindAndBind
-BDB_FB_TAR_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/FindAndBind
+BDB_FB_TAR_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/FindAndBind
+BDB_FB_TAR_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/FindAndBind
 INCFLAGS += -I$(BDB_FB_TAR_INC_DIR)
 FB_TAR_SRC = bdb_fb_common.c
 FB_TAR_SRC += bdb_fb_target.c
@@ -168,8 +168,8 @@ endif
 
 ifeq ($(BDB_SUPPORT_OOBC), 1)
 CFLAGS += -DBDB_SUPPORT_OOBC
-BDB_OOB_INC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/OutOfBand
-BDB_OOB_SRC_DIR = $(COMPONENTS_BASE_DIR)/BDB/Source/OutOfBand
+BDB_OOB_INC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/OutOfBand
+BDB_OOB_SRC_DIR = $(ZIGBEE_BASE_DIR)/BDB/Source/OutOfBand
 INCFLAGS += -I$(BDB_OOB_INC_DIR)
 OOB_SRC += bdb_DeviceCommissioning.c
 ifeq ($(RAMOPT), 1)

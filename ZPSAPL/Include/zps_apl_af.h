@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020,2022 NXP.
+ * Copyright 2020,2022-2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -109,10 +109,12 @@ typedef struct {
 #ifndef R23_UPDATES
     uint32 bComplexDescAvail : 1;
     uint32 bUserDescAvail    : 1;
+    uint32 eReserved         : 3; /* reserved */
 #else
     uint32                   : 2 /* padding */;
+    unsigned bFragSupport    : 1;
+    unsigned eReserved       : 2; /* reserved */
 #endif
-    uint32 eReserved         : 3; /* reserved */
     uint32 eFrequencyBand    : 5;
     uint32 eApsFlags         : 3;
     uint32 u8MacFlags        : 8;
@@ -273,8 +275,13 @@ typedef struct
     uint64 u64ExtAddr;     /**< Device's IEEE address */
     uint16 u16NwkAddr;     /**< Extended address of device wishing to associate */
     uint8  u8Capability;   /**< Device capabilities */
+#ifdef R23_UPDATES
+    uint8  u8MacID;        /**< Index in the MAC interface table */
+    uint8  u8JoinerMethod; /**< The nature of the join or rejoin */
+#else
     uint8  u8Rejoin;       /**< The nature of the join or rejoin */
     uint8  u8SecureRejoin; /**< Indicates if the rejoin was a secure rejoin */
+#endif
 } ZPS_tsAfNwkJoinIndEvent;
 
 typedef struct {
@@ -796,6 +803,9 @@ PUBLIC ZPS_teStatus zps_eAfConfirmKeyReqRsp (void* pvApl,  uint8 u8Status,  uint
 
 PUBLIC ZPS_teStatus zps_eAfVerifyKeyReqRsp ( void* pvApl,  uint64 u64DstAddr,  uint8 u8KeyType);
 PUBLIC void ZPS_vSecondTimerCallback (void);
+#ifdef R23_UPDATES
+PUBLIC void ZPS_vAplChallengeTimerHandleExpiry(void *pvApl, void *pvParam);
+#endif
 
 PUBLIC void vWrite16Nbo(uint16 u16Word, uint8 *pu8Payload);
 PUBLIC void vWrite32Nbo(uint32 u32Word, uint8 *pu8Payload);

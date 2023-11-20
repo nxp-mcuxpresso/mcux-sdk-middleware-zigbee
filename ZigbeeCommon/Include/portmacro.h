@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020, 2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -35,6 +35,8 @@
 #include "portmacro_JN516x.h"
 #elif (defined JN518x)
 #include "portmacro_JN518x.h"
+#elif (defined __linux__)
+#include "portmacro_linux.h"
 #else
 #error "define the chip family"
 #endif

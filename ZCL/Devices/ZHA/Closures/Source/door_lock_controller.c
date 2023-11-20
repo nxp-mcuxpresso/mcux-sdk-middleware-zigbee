@@ -45,7 +45,7 @@
 #include "DoorLock.h"
 #include "Groups.h"
 #include "door_lock_controller.h"
-#include "Time.h"
+#include "ZclTime.h"
 #ifdef CLD_POLL_CONTROL
     #include "PollControl.h"
 #endif

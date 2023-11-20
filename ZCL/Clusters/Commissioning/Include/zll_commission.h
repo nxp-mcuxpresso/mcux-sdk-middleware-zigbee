@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -99,6 +99,10 @@
 #define aplcMinStartupDelayTime            2            // Seconds
 #define aplcRxWindowDuration               5            // Seconds
 #define aplcScanTimeBaseDuration           250          // milli seconds
+
+#ifndef TL_SCAN_LQI_MIN
+#define TL_SCAN_LQI_MIN                    100
+#endif
 
 #define TL_SCAN_RX_TIME_MS                  aplcScanTimeBaseDuration
 #define TL_INTERPAN_LIFE_TIME_SEC           aplcInterPANTransIdLifetime

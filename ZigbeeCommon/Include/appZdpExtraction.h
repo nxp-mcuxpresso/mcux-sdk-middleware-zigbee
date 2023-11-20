@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020,2022 NXP.
+ * Copyright 2020,2022,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -29,11 +29,32 @@
 #ifndef APPZDPEXTRACTION_H_
 #define APPZDPEXTRACTION_H_
 
+#include <stdbool.h>
 #include <jendefs.h>
 #include "zps_apl_zdp.h"
 #include "zps_apl_af.h"
 #include "pdum_apl.h"
 #include "pdum_nwk.h"
+
+/* Maximum number of binding table entries */
+#ifndef APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES
+#define APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES 5
+#endif
+
+/* Maximum number of network descriptors */
+#ifndef APP_ZDP_MAX_NUM_NETWORK_DESCR
+#define APP_ZDP_MAX_NUM_NETWORK_DESCR   5
+#endif
+
+/* Maximum number of neighbor table entries */
+#ifndef APP_ZDP_MAX_NUM_NT_LIST_ENTRIES
+#define APP_ZDP_MAX_NUM_NT_LIST_ENTRIES 2
+#endif
+
+/* Maximum number of reported discovery cache entries */
+#ifndef APP_ZDP_MAX_NUM_DISCOVERY_CACHE
+#define APP_ZDP_MAX_NUM_DISCOVERY_CACHE 5
+#endif
 
 typedef struct {
     uint8   u8Status;
@@ -103,16 +124,19 @@ typedef struct {
 #ifndef R23_UPDATES
         ZPS_tsAplZdpMgmtCacheRsp sMgmtCacheRsp;
 #endif
+#ifdef R23_UPDATES
+        ZPS_tsAplZdpMgmtNwkBeaconSurveyRsp sMgmtBeaconSurveyRsp;
+#endif
         ZPS_tsAplZdpMgmtNwkUpdateNotify sMgmtNwkUpdateNotify;
         ZPS_tsAplZdpMgmtNwkUnSolictedUpdateNotify sMgmtNwkUnsolicitedUpdateNotify;
         ZPS_tsAplZdpMgmtMibIeeeRsp sMgmtMibIeeeRsp;
     }uZdpData;
     union {
-        ZPS_tsAplZdpBindingTableEntry asBindingTable[5];
-        ZPS_tsAplZdpNetworkDescr asNwkDescTable[5];
-        ZPS_tsAplZdpNtListEntry asNtList[2];
+        ZPS_tsAplZdpBindingTableEntry asBindingTable[APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES];
+        ZPS_tsAplZdpNetworkDescr asNwkDescTable[APP_ZDP_MAX_NUM_NETWORK_DESCR];
+        ZPS_tsAplZdpNtListEntry asNtList[APP_ZDP_MAX_NUM_NT_LIST_ENTRIES];
 #ifndef R23_UPDATES
-        ZPS_tsAplDiscoveryCache aDiscCache[5];
+        ZPS_tsAplDiscoveryCache aDiscCache[APP_ZDP_MAX_NUM_DISCOVERY_CACHE];
 #endif
         uint16 au16Data[34];
         uint8 au8Data[77];

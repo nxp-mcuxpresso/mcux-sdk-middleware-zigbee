@@ -29,12 +29,14 @@
 #ifndef ZTIMER_H_
 #define ZTIMER_H_
 
+#include <stdint.h>
+
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
 
-#define ZTIMER_TIME_SEC(v) ((uint32)(v) * 1000UL)
-#define ZTIMER_TIME_MSEC(v) ((uint32)(v) * 1UL)
+#define ZTIMER_TIME_SEC(v) ((uint32_t)(v) * 1000UL)
+#define ZTIMER_TIME_MSEC(v) ((uint32_t)(v) * 1UL)
 
 /* Flags for timer configuration */
 #define ZTIMER_FLAG_ALLOW_SLEEP     0
@@ -55,10 +57,10 @@ typedef void (*ZTIMER_tpfCallback)(void *pvParam);
 
 typedef struct
 {
-    uint8               u8Flags;
-    ZTIMER_teState      eState;
-    uint32                u32Time;
-    void                *pvParameters;
+    uint8_t               u8Flags;
+    ZTIMER_teState        eState;
+    uint32_t              u32Time;
+    void                  *pvParameters;
     ZTIMER_tpfCallback    pfCallback;
 } ZTIMER_tsTimer;
 
@@ -72,21 +74,21 @@ typedef enum
 /***        Exported Functions                                            ***/
 /****************************************************************************/
 
-PUBLIC ZTIMER_teStatus ZTIMER_eInit(ZTIMER_tsTimer *psTimers, uint8 u8NumTimers);
+ZTIMER_teStatus ZTIMER_eInit(ZTIMER_tsTimer *psTimers, uint8_t u8NumTimers);
 #if (JENNIC_CHIP_FAMILY == JN516x)
-PUBLIC void ISR_vTickTimer(void);
+void ISR_vTickTimer(void);
 #else
-PUBLIC void ZTIMER_vAhiCallback ( uint32 u32Device, uint32 u32ItemBitmap);
+void ZTIMER_vAhiCallback ( uint32_t u32Device, uint32_t u32ItemBitmap);
 #endif
-PUBLIC void ZTIMER_vSleep(void);
-PUBLIC void ZTIMER_vWake(void);
-PUBLIC void ZTIMER_vTask(void);
-PUBLIC ZTIMER_teStatus ZTIMER_eOpen(uint8 *pu8TimerIndex, ZTIMER_tpfCallback pfCallback, void *pvParams, uint8 u8Flags);
-PUBLIC ZTIMER_teStatus ZTIMER_eClose(uint8 u8TimerIndex);
-PUBLIC ZTIMER_teStatus ZTIMER_eStart(uint8 u8TimerIndex, uint32 u32Time);
-PUBLIC ZTIMER_teStatus ZTIMER_eStop(uint8 u8TimerIndex);
-PUBLIC ZTIMER_teState ZTIMER_eGetState(uint8 u8TimerIndex);
-PUBLIC void ZTIMER_vStopAllTimers(void);
+void ZTIMER_vSleep(void);
+void ZTIMER_vWake(void);
+void ZTIMER_vTask(void);
+ZTIMER_teStatus ZTIMER_eOpen(uint8_t *pu8TimerIndex, ZTIMER_tpfCallback pfCallback, void *pvParams, uint8_t u8Flags);
+ZTIMER_teStatus ZTIMER_eClose(uint8_t u8TimerIndex);
+ZTIMER_teStatus ZTIMER_eStart(uint8_t u8TimerIndex, uint32_t u32Time);
+ZTIMER_teStatus ZTIMER_eStop(uint8_t u8TimerIndex);
+ZTIMER_teState ZTIMER_eGetState(uint8_t u8TimerIndex);
+void ZTIMER_vStopAllTimers(void);
 /****************************************************************************/
 /***        External Variables                                            ***/
 /****************************************************************************/

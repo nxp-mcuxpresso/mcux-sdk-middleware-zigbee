@@ -100,14 +100,14 @@ PUBLIC void vDisplayTableSizes(void)
     void * thisNet = ZPS_pvAplZdoGetNwkHandle();
     thisNib = ZPS_psNwkNibGetHandle(thisNet);
 
-    DBG_vPrintf(TRACE_ZBP_UTILS, "Address Map:Size: %d: Record %d: %d: Total: %d ",
+    DBG_vPrintf(TRACE_ZBP_UTILS, "Address Map:Size: %d: Record %d: Total: %d ",
                                 thisNib->sTblSize.u16AddrMap,
                                 10,
                                 (thisNib->sTblSize.u16AddrMap * 10)
                                 );
 
 
-    DBG_vPrintf(TRACE_ZBP_UTILS, "NT:Size: %d: Record %d: %d: Total: %d ",
+    DBG_vPrintf(TRACE_ZBP_UTILS, "NT:Size: %d: Record %d: Total: %d ",
                                 thisNib->sTblSize.u16NtActv,
                                 sizeof(ZPS_tsNwkActvNtEntry),
                                (thisNib->sTblSize.u16NtActv * sizeof(ZPS_tsNwkActvNtEntry))
@@ -115,14 +115,14 @@ PUBLIC void vDisplayTableSizes(void)
 
 
 
-    DBG_vPrintf(TRACE_ZBP_UTILS, "Routing Table:Size: %d: Record %d: %d: Total: %d ",
+    DBG_vPrintf(TRACE_ZBP_UTILS, "Routing Table:Size: %d: Record %d: Total: %d ",
                                 thisNib->sTblSize.u16Rt,
                                 sizeof(ZPS_tsNwkRtEntry),
                                 (thisNib->sTblSize.u16Rt * sizeof(ZPS_tsNwkRtEntry))
                                 );
 
 
-    DBG_vPrintf(TRACE_ZBP_UTILS, "Route Record:Size: %d: Record %d: %d: Total: %d ",
+    DBG_vPrintf(TRACE_ZBP_UTILS, "Route Record:Size: %d: Record %d: Total: %d ",
                                 thisNib->sTblSize.u16Rct,
                                 sizeof(ZPS_tsNwkRctEntry),
                                 (thisNib->sTblSize.u16Rct * sizeof(ZPS_tsNwkRctEntry))
@@ -270,6 +270,9 @@ PUBLIC void vDisplayAPSTable(void)
         DBG_vPrintf(TRACE_ZBP_UTILS, "\r\n");
         DBG_vPrintf(TRACE_ZBP_UTILS, "Incoming FC: %d\n", tsAplAib->pu32IncomingFrameCounter[i]);
         DBG_vPrintf(TRACE_ZBP_UTILS, "Outgoing FC: %d\n", tsAplAib->psAplDeviceKeyPairTable->psAplApsKeyDescriptorEntry[i].u32OutgoingFrameCounter);
+#ifdef R23_UPDATES
+        DBG_vPrintf(TRACE_ZBP_UTILS, "Verified FC: %d\n", tsAplAib->pbVerifiedFrameCounter[i]);
+#endif
     }
 }
 
@@ -620,6 +623,39 @@ PUBLIC void vDisplayBindingTable( void )
     DBG_vPrintf(TRACE_ZBP_UTILS, "\r\n");
 }
 
+#ifdef R23_UPDATES
+PUBLIC void vDisplayChallengeReqTable(void)
+{
+    uint8 i;
+    ZPS_tsAplAib * psAplAib;
+    psAplAib = ZPS_psAplAibGetAib();
+
+    for (i = 0; i < psAplAib->psAplChallengeReqTable->u16SizeOfChallengeReqTable; i++)
+    {
+        DBG_vPrintf(TRUE, "u64ApsChallengeTargetEui64: %016llx\n", psAplAib->psAplChallengeReqTable->psAplApsChallengeReqEntry[i].u64ApsChallengeTargetEui64);
+        DBG_vPrintf(TRUE, "u64ApsChallengeValue: %lld \n", psAplAib->psAplChallengeReqTable->psAplApsChallengeReqEntry[i].u64ApsChallengeValue);
+        DBG_vPrintf(TRUE, "u8ApsChallengePeriodTimeoutSeconds: %d\n", psAplAib->u8ApsChallengePeriodTimeoutSeconds);
+        DBG_vPrintf(TRUE, "u8ApsChallengePeriodRemainingSeconds: %d\n", psAplAib->psAplChallengeReqTable->psAplApsChallengeReqEntry[i].u8ApsChallengePeriodRemainingSeconds);
+    }
+}
+
+PUBLIC void vDisplayFragmentationTable(void)
+{
+
+    uint8 i;
+
+    ZPS_tsAplAib * psAplAib;
+
+    psAplAib = ZPS_psAplAibGetAib();
+
+    for (i = 0; i < psAplAib->psAplFragmentationTable->u16SizeOfFragmentationTable; i++)
+    {
+        DBG_vPrintf(TRUE, "u16Addr: %x \n", psAplAib->psAplFragmentationTable->psAplApsFragmentationEntry[i].u16LookupAddr);
+        DBG_vPrintf(TRUE, "MaxIncomingTx: %d \n", psAplAib->psAplFragmentationTable->psAplApsFragmentationEntry[i].u16MaxIncomingTxSize);
+        DBG_vPrintf(TRUE, "Supported: %d\n", psAplAib->psAplFragmentationTable->psAplApsFragmentationEntry[i].bSupported);
+    }
+}
+#endif
 
 /****************************************************************************/
 /***        Local Functions                                               ***/

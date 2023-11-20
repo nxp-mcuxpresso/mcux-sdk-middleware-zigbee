@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020, 2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -32,21 +32,25 @@
 
 #include <jendefs.h>
 #include <string.h>
+#include <zb_platform.h>
 #include "dbg.h"
 #include "ZTimer.h"
-#include "pwrm.h"
-#include "MicroSpecific.h"
-#if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
-    #include "AppHardwareApi.h"
+#ifndef NCP_HOST
+	#include "pwrm.h"
+	#include "MicroSpecific.h"
+	#if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
+    	#include "AppHardwareApi.h"
+	#else
+    	#include "fsl_os_abstraction.h"
+    	#ifndef FSL_RTOS_FREE_RTOS
+        	#include "fsl_os_abstraction_bm.h"
+    	#else
+        	#include "fsl_os_abstraction_free_rtos.h"
+    	#endif
+	#endif
 #else
-    #include "fsl_os_abstraction.h"
-    #ifndef FSL_RTOS_FREE_RTOS
-        #include "fsl_os_abstraction_bm.h"
-    #else
-        #include "fsl_os_abstraction_free_rtos.h"
-    #endif
+#include "portmacro.h"
 #endif
-
 
 /****************************************************************************/
 /*          Macro Definitions                                               */
@@ -189,12 +193,15 @@ PUBLIC void ZTIMER_vAhiCallback ( uint32 u32Device, uint32 u32ItemBitmap)
  ****************************************************************************/
 PUBLIC void ZTIMER_vSleep(void)
 {
+#ifndef NCP_HOST
     #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
         vAHI_TickTimerConfigure(E_AHI_TICK_TIMER_DISABLE);
     #else
         SysTick->CTRL &= ~(SysTick_CTRL_ENABLE_Msk);
     #endif
-
+#else
+        /* Do nothing */
+#endif
 }
 
 
@@ -210,7 +217,7 @@ PUBLIC void ZTIMER_vSleep(void)
  ****************************************************************************/
 PUBLIC void ZTIMER_vWake(void)
 {
-
+#ifndef NCP_HOST
     #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
         vAHI_TickTimerConfigure(E_AHI_TICK_TIMER_DISABLE);
         #if (defined JENNIC_CHIP_FAMILY_JN516x)
@@ -227,7 +234,9 @@ PUBLIC void ZTIMER_vWake(void)
         extern void OSA_TimeInit(void);
         OSA_TimeInit();
     #endif
-
+#else
+        /* Do nothing */
+#endif
 }
 
 
@@ -252,7 +261,11 @@ PUBLIC void ZTIMER_vTask(void)
     /* save the old tick */
     volatile uint32 u32Tick_old = ZTIMER_sCommon.u32Ticks;
     /* get new tick */
-    volatile uint32 u32Tick_new = OSA_TimeGetMsec();
+#ifndef NCP_HOST
+    volatile uint32 u32Tick_new = zbPlatGetTime();
+#else
+    volatile uint32 u32Tick_new = GetTickCountMs();
+#endif
     /* Get number of ticks since last */
     
     if(u32Tick_new >= u32Tick_old)

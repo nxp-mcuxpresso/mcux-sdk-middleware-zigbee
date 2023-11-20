@@ -66,7 +66,7 @@
 #endif
 
 #ifdef CLD_TIME
-    #include "Time.h"
+    #include "ZclTime.h"
 #endif
 
 /****************************************************************************/

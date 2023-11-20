@@ -61,7 +61,7 @@ extern "C" {
 #ifdef CLD_OTA
 #include "OTA.h"
 #endif
-#include "Time.h"
+#include "ZclTime.h"
 #ifdef CLD_POLL_CONTROL
     #include "PollControl.h"
 #endif
@@ -72,10 +72,10 @@ extern "C" {
 #include "OnOff.h"
 #endif
 #ifdef CLD_PRICE
-#include "price.h"
+#include "Price.h"
 #endif
 #ifdef CLD_DRLC
-#include "drlc.h"
+#include "DRLC.h"
 #endif
 #ifdef CLD_ELECTRICAL_MEASUREMENT
 	#include "ElectricalMeasurement.h"

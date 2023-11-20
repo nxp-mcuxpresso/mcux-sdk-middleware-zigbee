@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020, 2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -35,10 +35,19 @@
 #endif
 
 #if ZIGBEE_USE_FRAMEWORK
+#if defined(K32W1480_SERIES) || defined(K32W1)
+#include "fsl_component_generic_list.h"
+#else
 #include "GenericList.h"
+#endif
+
 typedef struct
 {
+#if defined(K32W1480_SERIES) || defined(K32W1)
+    list_label_t list;
+#else
     list_t list;
+#endif
     uint32 u32ItemSize; 
 }tszQueue;
 #else
@@ -61,6 +70,7 @@ PUBLIC uint32 ZQ_u32QueueGetQueueSize(void *pvQueueHandle);
 PUBLIC uint32 ZQ_u32QueueGetQueueMessageWaiting ( void*    pu8QueueHandle );
 PUBLIC void* ZQ_pvGetFirstElementOnQueue ( void* pvQueueHandle );
 PUBLIC void* ZQ_pvGetNextElementOnQueue ( void* pvQueueHandle, void* pvMsg );
+PUBLIC void ZQ_bQueueFlush(void *pvQueueHandle);
 #endif /*ZQUEUE_H_*/
 
 /****************************************************************************/

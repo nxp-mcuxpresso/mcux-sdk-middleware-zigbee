@@ -39,7 +39,9 @@ extern "C" {
 /****************************************************************************/
 #include "jendefs.h"
 #if (JENNIC_CHIP_FAMILY==JN518x)
+#ifndef K32W1480_SERIES
    #include "fsl_reset.h"
+#endif
 #endif
 /****************************************************************************/
 /***        Macro Definitions                                             ***/

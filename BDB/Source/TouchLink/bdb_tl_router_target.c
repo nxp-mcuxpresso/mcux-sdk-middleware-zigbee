@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -49,16 +49,12 @@
 #include "zps_nwk_nib.h"
 #include "ZTimer.h"
 
-
-
 #include "app_common.h"
-
 
 #include "app_main.h"
 #include "app_zlo_light_node.h"
 
-#include "app_zcl_light_task.h"
-#include "app_events.h"
+#include "app_zcl_task.h"
 #include "zcl_customcommand.h"
 
 #include "zps_nwk_nib.h"
@@ -74,7 +70,6 @@
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
 #define ADJUST_POWER        TRUE
-#define TL_SCAN_LQI_MIN    (100)
 
 #ifndef DEBUG_JOIN
 #define TRACE_JOIN            FALSE
@@ -880,7 +875,9 @@ PRIVATE teZCL_Status BDB_eTlSendScanResponse(ZPS_tsNwkNib *psNib,
     sScanRsp.u8NwkUpdateId = psNib->sPersist.u8UpdateId;
     sScanRsp.u8LogicalChannel = psNib->sPersist.u8VsChannel;
     uint32 u32temp;
-    eAppApiPlmeGet(PHY_PIB_ATTR_CURRENT_CHANNEL, &u32temp);
+
+    ZPS_eMacPlmeGet(PHY_PIB_ATTR_CURRENT_CHANNEL, &u32temp);
+
     DBG_vPrintf(TRACE_JOIN, "Send Scan Response %d Actual %d\r\n", sScanRsp.u8LogicalChannel, u32temp);
     if (sZllState.eState == TL_FACTORY_NEW)
     {

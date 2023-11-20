@@ -24,10 +24,14 @@
  * DESCRIPTION:
  *
  *****************************************************************************/
-
+#include <stdbool.h>
 #include "appZdpExtraction.h"
 #include <string.h>
 #include "dbg.h"
+
+#ifndef TRACE_ZDP_EXTRACTION
+#define TRACE_ZDP_EXTRACTION    TRUE
+#endif
 
 /****************************************************************************
  *
@@ -1540,6 +1544,14 @@ PUBLIC bool zps_bAplZdpUnpackMgmtLqiResponse(ZPS_tsAfEvent *psZdoServerEvent ,
         psReturnStruct->uZdpData.sMgmtLqiRsp.u8StartIndex = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
         psReturnStruct->uZdpData.sMgmtLqiRsp.u8NeighborTableListCount = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
 
+        /* Max APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES entries supported */
+        if (psReturnStruct->uZdpData.sMgmtLqiRsp.u8NeighborTableListCount > APP_ZDP_MAX_NUM_NT_LIST_ENTRIES) {
+            DBG_vPrintf(TRACE_ZDP_EXTRACTION, "zps_bAplZdpUnpackMgmtLqiResponse: number of binding table entries - rcvd %d limited to %d\n",
+                    psReturnStruct->uZdpData.sMgmtLqiRsp.u8NeighborTableListCount,
+                    APP_ZDP_MAX_NUM_NT_LIST_ENTRIES);
+            psReturnStruct->uZdpData.sMgmtLqiRsp.u8NeighborTableListCount = APP_ZDP_MAX_NUM_NT_LIST_ENTRIES;
+        }
+
         if(ZPS_E_SUCCESS == psReturnStruct->uZdpData.sMgmtLqiRsp.u8Status)
         {
             for(u32LoopCounter = 0 ; u32LoopCounter < psReturnStruct->uZdpData.sMgmtLqiRsp.u8NeighborTableListCount ; u32LoopCounter++)
@@ -1622,6 +1634,92 @@ PUBLIC bool zps_bAplZdpUnpackMgmtRtgResponse(ZPS_tsAfEvent *psZdoServerEvent ,
     return bZdp;
 }    
 
+#ifdef R23_UPDATES
+/****************************************************************************
+ *
+ * NAME:       zps_bAplZdpUnpackBeaconSurveyResponse
+ */
+/**
+ *
+ *
+ * @ingroup
+ *
+ * @param
+ * @param
+ * @param
+ *
+ * @param
+ *
+ * @return
+ *
+ * @note
+ *
+ ****************************************************************************/
+PUBLIC bool zps_bAplZdpUnpackBeaconSurveyResponse(ZPS_tsAfEvent *psZdoServerEvent,
+                                                  ZPS_tsAfZdpEvent *psReturnStruct)
+{
+    bool bZdp = FALSE;
+    if( psZdoServerEvent != NULL)
+    {
+        uint8      u8SeqNum;
+        uint32     u32Location = 0;
+
+        PDUM_thAPduInstance hAPduInst = psZdoServerEvent->uEvent.sApsDataIndEvent.hAPduInst;
+        uint16 u16ClusterId = psZdoServerEvent->uEvent.sApsDataIndEvent.u16ClusterId;
+
+        bZdp = TRUE;
+        u8SeqNum = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[0];
+        u32Location++;
+
+
+        psReturnStruct->u8SequNumber = u8SeqNum;
+        psReturnStruct->u16ClusterId = u16ClusterId;
+
+        psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.u8Status =
+            APDU_BUF_INC(hAPduInst, u32Location);
+        int iPayloadSize = PDUM_u16APduInstanceGetPayloadSize(hAPduInst) - u32Location;
+        int iOff1, iOff2;
+
+        if ((psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.u8Status == ZPS_E_SUCCESS) &&
+            (iPayloadSize > 0) &&
+            (ZPS_TLV_ENUM_SUCCESS == ZPS_eTlvParseValidate(ZPS_TLV_STACK_CTX, &g_Tlv_BeaconSurveyRsp,
+                &((pdum_tsAPduInstance*)hAPduInst)->au8Storage[u32Location], iPayloadSize)) &&
+            (iOff1 = ZPS_iTlvGetOffset(ZPS_TLV_STACK_CTX, 1)) >= 0 &&
+            (iOff2 = ZPS_iTlvGetOffset(ZPS_TLV_STACK_CTX, 2)) >= 0)
+        {
+            /* TLVs must follow; Local TLV 1, beacon survey results */
+            PDUM_u16APduInstanceReadNBO(hAPduInst, u32Location + iOff1, "a\6",
+                    &psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.sTlvResults);
+            iPayloadSize -= sizeof(tuBeaconSurveyResults);
+
+            /* TLVs must follow; Local TLV 2, beacon survey potential parents */
+            u32Location += iOff2;
+            u32Location +=
+                    PDUM_u16APduInstanceReadNBO(hAPduInst, u32Location, "a\6",
+                    &psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.sTlvParents);
+            iPayloadSize -= offsetof(tuPotentialParents, asBeacons);
+
+            for (iOff2 = 0;
+                 iOff2 < MIN(ZPS_TLV_G_POTENTIAL_PARENTS_MAX,
+                             psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.sTlvParents.u8CntOtherParents) &&
+                 iPayloadSize >= 3; iOff2++)
+            {
+                u32Location += PDUM_u16APduInstanceReadNBO(hAPduInst, u32Location, "hb",
+                               &psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.sTlvParents.asBeacons[iOff2]);
+                iPayloadSize -= sizeof(uint16) + sizeof(uint8);
+            }
+            /* Overwrite the actual read count */
+            psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.sTlvParents.u8CntOtherParents = iOff2;
+            for (; iOff2 < ZPS_TLV_G_POTENTIAL_PARENTS_MAX; iOff2++)
+            {
+                psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.sTlvParents.asBeacons[iOff2].u16Addr = 0;
+                psReturnStruct->uZdpData.sMgmtBeaconSurveyRsp.sTlvParents.asBeacons[iOff2].u8Lqa = 0;
+            }
+        }
+    }
+    return bZdp;
+}
+#endif
 
 /****************************************************************************
  *
@@ -1673,6 +1771,7 @@ PUBLIC bool zps_bAplZdpUnpackNwkUpdateNotifyResponse(ZPS_tsAfEvent *psZdoServerE
 
         if(ZPS_E_SUCCESS == psReturnStruct->uZdpData.sMgmtNwkUpdateNotify.u8Status)
         {
+            psReturnStruct->uZdpData.sMgmtNwkUpdateNotify.pu8EnergyValuesList = psReturnStruct->uLists.au8Data;
             for(u32LoopCounter = 0 ; u32LoopCounter < psReturnStruct->uZdpData.sMgmtNwkUpdateNotify.u8ScannedChannelListCount ; u32LoopCounter++)
             {
                 psReturnStruct->uLists.au8Data[ u32LoopCounter] = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
@@ -2285,6 +2384,14 @@ PUBLIC bool zps_bAplZdpUnpackRecoverBindTableResponse(ZPS_tsAfEvent *psZdoServer
         APDU_BUF_READ16_INC( psReturnStruct->uZdpData.sRecoverBindTableRsp.u16BindingTableEntries,hAPduInst , u32Location);
         APDU_BUF_READ16_INC( psReturnStruct->uZdpData.sRecoverBindTableRsp.u16BindingTableListCount ,hAPduInst , u32Location);
 
+        /* Max APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES entries supported */
+        if (psReturnStruct->uZdpData.sRecoverBindTableRsp.u16BindingTableListCount > APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES) {
+            DBG_vPrintf(TRACE_ZDP_EXTRACTION, "zps_bAplZdpUnpackRecoverBindTableResponse: number of binding table entries - rcvd %d limited to %d\n",
+                    psReturnStruct->uZdpData.sRecoverBindTableRsp.u16BindingTableListCount,
+                    APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES);
+            psReturnStruct->uZdpData.sRecoverBindTableRsp.u16BindingTableListCount = APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES;
+        }
+
         if(ZPS_E_SUCCESS == psReturnStruct->uZdpData.sRecoverBindTableRsp.u8Status)
         {
             for(u32LoopCounter = 0 ; u32LoopCounter < psReturnStruct->uZdpData.sRecoverBindTableRsp.u16BindingTableListCount ; u32LoopCounter++)
@@ -2427,6 +2534,14 @@ PUBLIC bool zps_bAplZdpUnpackBindRegisterResponse(ZPS_tsAfEvent *psZdoServerEven
         APDU_BUF_READ16_INC( psReturnStruct->uZdpData.sBindRegisterRsp.u16BindingTableEntries,hAPduInst , u32Location);
         APDU_BUF_READ16_INC( psReturnStruct->uZdpData.sBindRegisterRsp.u16BindingTableListCount ,hAPduInst , u32Location);
 
+        /* Max APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES entries supported */
+        if (psReturnStruct->uZdpData.sBindRegisterRsp.u16BindingTableListCount > APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES) {
+            DBG_vPrintf(TRACE_ZDP_EXTRACTION, "zps_bAplZdpUnpackBindRegisterResponse: number of binding table entries - rcvd %d limited to %d\n",
+                    psReturnStruct->uZdpData.sBindRegisterRsp.u16BindingTableListCount,
+                    APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES);
+            psReturnStruct->uZdpData.sBindRegisterRsp.u16BindingTableListCount = APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES;
+        }
+
         if(ZPS_E_SUCCESS == psReturnStruct->uZdpData.sBindRegisterRsp.u8Status)
         {
             for(u32LoopCounter = 0 ; u32LoopCounter < psReturnStruct->uZdpData.sBindRegisterRsp.u16BindingTableListCount ; u32LoopCounter++)
@@ -2503,6 +2618,14 @@ PUBLIC bool zps_bAplZdpUnpackMgmtNwkDiscResponse(ZPS_tsAfEvent *psZdoServerEvent
         psReturnStruct->uZdpData.sMgmtNwkDiscRsp.u8StartIndex = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
         psReturnStruct->uZdpData.sMgmtNwkDiscRsp.u8NetworkListCount = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
 
+        /* Max APP_ZDP_MAX_NUM_NETWORK_DESCR entries supported */
+        if (psReturnStruct->uZdpData.sMgmtNwkDiscRsp.u8NetworkListCount > APP_ZDP_MAX_NUM_NETWORK_DESCR) {
+            DBG_vPrintf(TRACE_ZDP_EXTRACTION, "zps_bAplZdpUnpackMgmtNwkDiscResponse: number of network descriptors - rcvd %d limited to %d\n",
+                    psReturnStruct->uZdpData.sMgmtNwkDiscRsp.u8NetworkListCount,
+                    APP_ZDP_MAX_NUM_NETWORK_DESCR);
+            psReturnStruct->uZdpData.sMgmtNwkDiscRsp.u8NetworkListCount = APP_ZDP_MAX_NUM_NETWORK_DESCR;
+        }
+
         if(ZPS_E_SUCCESS == psReturnStruct->uZdpData.sMgmtNwkDiscRsp.u8Status)
         {
             for(u32LoopCounter = 0 ; u32LoopCounter < psReturnStruct->uZdpData.sMgmtNwkDiscRsp.u8NetworkListCount ; u32LoopCounter++)
@@ -2578,6 +2701,15 @@ PUBLIC bool zps_bAplZdpUnpackMgmtBindResponse(ZPS_tsAfEvent *psZdoServerEvent ,
         psReturnStruct->uZdpData.sMgmtBindRsp.u16StartIndex = u8value;
         u8value = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
         psReturnStruct->uZdpData.sMgmtBindRsp.u16BindingTableListCount = u8value;
+
+        /* Max APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES entries supported */
+        if ( psReturnStruct->uZdpData.sMgmtBindRsp.u16BindingTableListCount > APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES) {
+            DBG_vPrintf(TRACE_ZDP_EXTRACTION, "zps_bAplZdpUnpackMgmtBindResponse: number of binding table entries - rcvd %d limited to %d\n",
+                    psReturnStruct->uZdpData.sMgmtBindRsp.u16BindingTableListCount,
+                    APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES);
+            psReturnStruct->uZdpData.sMgmtBindRsp.u16BindingTableListCount = APP_ZDP_MAX_NUM_BINDING_TABLE_ENTRIES;
+        }
+
         if(ZPS_E_SUCCESS == psReturnStruct->uZdpData.sMgmtBindRsp.u8Status)
         {
             for(u32LoopCounter = 0 ; u32LoopCounter < psReturnStruct->uZdpData.sMgmtBindRsp.u16BindingTableListCount ; u32LoopCounter++)
@@ -2659,6 +2791,14 @@ PUBLIC bool zps_bAplZdpUnpackMgmtCacheResponse(ZPS_tsAfEvent *psZdoServerEvent ,
         psReturnStruct->uZdpData.sMgmtCacheRsp.u8DiscoveryCacheEntries = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
         psReturnStruct->uZdpData.sMgmtCacheRsp.u8StartIndex = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
         psReturnStruct->uZdpData.sMgmtCacheRsp.u8DiscoveryCacheListCount = (( pdum_tsAPduInstance* )hAPduInst )->au8Storage[ u32Location++ ];
+
+        /* Max APP_ZDP_MAX_NUM_DISCOVERY_CACHE entries supported */
+        if (psReturnStruct->uZdpData.sMgmtCacheRsp.u8DiscoveryCacheListCount > APP_ZDP_MAX_NUM_DISCOVERY_CACHE) {
+            DBG_vPrintf(TRACE_ZDP_EXTRACTION, "zps_bAplZdpUnpackMgmtCacheResponse: number of discovery cache entries - rcvd %d limited to %d\n",
+                    psReturnStruct->uZdpData.sMgmtCacheRsp.u8DiscoveryCacheListCount,
+                    APP_ZDP_MAX_NUM_DISCOVERY_CACHE);
+            psReturnStruct->uZdpData.sMgmtCacheRsp.u8DiscoveryCacheListCount = APP_ZDP_MAX_NUM_DISCOVERY_CACHE;
+        }
 
         if(ZPS_E_SUCCESS == psReturnStruct->uZdpData.sMgmtCacheRsp.u8Status)
         {
@@ -2892,6 +3032,64 @@ PUBLIC bool zps_bAplZdpUnpackSecurityGetAuthLvl(ZPS_tsAfEvent *psZdoServerEvent,
     }
     return bZdp;
 }
+
+/****************************************************************************
+ *
+ * NAME:       zps_bAplZdpUnpackSecurityChallengeResponse
+ */
+/**
+ *
+ *
+ * @ingroup
+ *
+ * @param
+ * @param
+ * @param
+ *
+ * @param
+ *
+ * @return
+ *
+ * @note
+ *
+ ****************************************************************************/
+PUBLIC bool zps_bAplZdpUnpackSecurityChallengeResponse(ZPS_tsAfEvent *psZdoServerEvent,
+                                                 ZPS_tsAfZdpEvent *psReturnStruct)
+
+{
+    bool bZdp = FALSE;
+    if(psZdoServerEvent != NULL)
+    {
+        uint8     u8SeqNum;
+        uint32    u32Location = 0;
+
+        PDUM_thAPduInstance hAPduInst = psZdoServerEvent->uEvent.sApsDataIndEvent.hAPduInst;
+        uint16 u16ClusterId = psZdoServerEvent->uEvent.sApsDataIndEvent.u16ClusterId;
+        bZdp = TRUE;
+
+        u8SeqNum = APDU_BUF_INC(hAPduInst, u32Location);
+
+        psReturnStruct->u8SequNumber = u8SeqNum;
+        psReturnStruct->u16ClusterId = u16ClusterId;
+
+        psReturnStruct->uZdpData.sSingleStatusRsp.u8Status = APDU_BUF_INC(hAPduInst, u32Location);
+
+        uint8 u8PayloadSize = PDUM_u16APduInstanceGetPayloadSize(hAPduInst) - sizeof(uint8);
+        u8PayloadSize -= sizeof(uint8); /* OverallStatus */
+        uint8 u8Size = MIN(sizeof(psReturnStruct->uLists.au8Data) - 1, u8PayloadSize);
+
+        psReturnStruct->uLists.au8Data[0] = u8Size; /* size of the remaining data in the buffer */
+
+        if (u8Size)
+        {
+            char acFormat[] = {'a', u8Size, 0};
+
+            PDUM_u16APduInstanceReadNBO(psZdoServerEvent->uEvent.sApsDataIndEvent.hAPduInst,
+                    u32Location, acFormat, psReturnStruct->uLists.au8Data + 1);
+        }
+    }
+    return bZdp;
+}
 #endif
 
 /****************************************************************************
@@ -3003,6 +3201,8 @@ PUBLIC bool zps_bAplZdpUnpackResponse (ZPS_tsAfEvent *psZdoServerEvent ,ZPS_tsAf
         case ZPS_ZDP_SECURITY_GET_CONFIG_RSP_CLUSTER_ID:
             bZdp = zps_bAplZdpUnpackSecuritySetGetResponse(psZdoServerEvent, psReturnStruct);
             break;
+        case ZPS_ZDP_SECURITY_CHALLENGE_RSP_CLUSTER_ID:
+            bZdp = zps_bAplZdpUnpackSecurityChallengeResponse(psZdoServerEvent, psReturnStruct);
 #endif
         case ZPS_ZDP_MGMT_LQI_RSP_CLUSTER_ID:
              bZdp = zps_bAplZdpUnpackMgmtLqiResponse( psZdoServerEvent , psReturnStruct );
@@ -3012,6 +3212,11 @@ PUBLIC bool zps_bAplZdpUnpackResponse (ZPS_tsAfEvent *psZdoServerEvent ,ZPS_tsAf
             bZdp = zps_bAplZdpUnpackMgmtRtgResponse( psZdoServerEvent , psReturnStruct );
             break;
 
+#ifdef R23_UPDATES
+        case ZPS_ZDP_MGMT_NWK_BEACON_SURVEY_RSP_CLUSTER_ID:
+            bZdp = zps_bAplZdpUnpackBeaconSurveyResponse( psZdoServerEvent , psReturnStruct );
+            break;
+#endif
         case ZPS_ZDP_MGMT_NWK_UPDATE_NOTIFY_CLUSTER_ID:
         case ZPS_ZDP_MGMT_NWK_ENHANCE_UPDATE_NOTIFY_CLUSTER_ID:
             bZdp = zps_bAplZdpUnpackNwkUpdateNotifyResponse( psZdoServerEvent , psReturnStruct );

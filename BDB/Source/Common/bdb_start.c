@@ -136,7 +136,7 @@ bool_t (*prbCancelRejoinAction)(void)   = NULL;
  ****************************************************************************/
 PUBLIC void BDB_vInit(BDB_tsInitArgs *psInitArgs)
 {
-    ZPS_tsAplAib *psAib = ZPS_psAplAibGetAib();
+	ZPS_tsAplApsKeyDescriptorEntry *psLinkKey = NULL;
     /* Set the BDB state to E_STATE_BASE_INIT */
     sBDB.eState = E_STATE_BASE_INIT;
 
@@ -147,9 +147,10 @@ PUBLIC void BDB_vInit(BDB_tsInitArgs *psInitArgs)
     vInitAttribs();
     
     /* Assign Link keys */
-    sBDB.pu8DefaultTCLinkKey    = psAib->psAplDefaultTCAPSLinkKey->au8LinkKey;
-    sBDB.pu8DistributedLinkKey  = ( *(ZPS_psAplDefaultDistributedAPSLinkKey()) == NULL )? NULL : (*(ZPS_psAplDefaultDistributedAPSLinkKey()))->au8LinkKey;
-    sBDB.pu8PreConfgLinkKey     = ( *(ZPS_psAplDefaultGlobalAPSLinkKey()) == NULL )? NULL : (*(ZPS_psAplDefaultGlobalAPSLinkKey()))->au8LinkKey;
+    sBDB.pu8DefaultTCLinkKey  = ((psLinkKey = *(ZPS_psAplDefaultTrustCenterAPSLinkKey())) == NULL ) ? NULL : psLinkKey->au8LinkKey;
+    sBDB.pu8DistributedLinkKey  = ((psLinkKey = *(ZPS_psAplDefaultDistributedAPSLinkKey())) == NULL ) ? NULL : psLinkKey->au8LinkKey;
+    sBDB.pu8PreConfgLinkKey  = ((psLinkKey = *(ZPS_psAplDefaultGlobalAPSLinkKey())) == NULL ) ? NULL : psLinkKey->au8LinkKey;
+
 #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
     sBDB.pu8TouchLinkKey        = (uint8*)&sTLCertKey;
 #else
@@ -546,14 +547,22 @@ PUBLIC void BDB_vRejoinCycle(bool_t bSkipDirectJoin)
     {
         for(;eRejoinType < E_REJOIN_ATTEMPT_OVER; eRejoinType++)
         {
+            uint32_t *pau32ApsChannelMask;
+            uint8_t u8ChannelMasksCount = 0;
+
             DBG_vPrintf(TRACE_BDB,"BDB: Rejoin Cycle %d-", u8RejoinCycles);
             switch(eRejoinType)
             {
                 case E_REJOIN_WITHOUT_DISC:
+                {
                     /* Backup ApsChannelMask and restore after NwkForm confirmation */
-                    u32BackUpApsChannelMask = ZPS_psAplAibGetAib()->pau32ApsChannelMask[0];
-                    ZPS_psNwkNibGetHandle(ZPS_pvAplZdoGetNwkHandle())->sPersist.u64ExtPanId = ZPS_psAplAibGetAib()->u64ApsUseExtendedPanid;
+                    pau32ApsChannelMask = ZPS_pu32AplAibGetApsChannelMask(&u8ChannelMasksCount);
+                    u32BackUpApsChannelMask = pau32ApsChannelMask[0];
+
+                    ZPS_vNwkNibSetExtPanId (ZPS_pvAplZdoGetNwkHandle(), ZPS_u64AplAibGetApsUseExtendedPanId());
+
                     DBG_vPrintf(TRACE_BDB,"A without Disc           ");
+                }
                     break;
                 case E_REJION_WITH_DISC_ON_PRIMARY_CH:
                     ZPS_eAplAibSetApsChannelMask(sBDB.sAttrib.u32bdbPrimaryChannelSet);
@@ -566,10 +575,10 @@ PUBLIC void BDB_vRejoinCycle(bool_t bSkipDirectJoin)
                 default:
                     break;
             }
-            DBG_vPrintf(TRACE_BDB,"- on Ch Mask 0x%08x\n",ZPS_psAplAibGetAib()->pau32ApsChannelMask[0]);
+            pau32ApsChannelMask = ZPS_pu32AplAibGetApsChannelMask(&u8ChannelMasksCount);
+            DBG_vPrintf(TRACE_BDB,"- on Ch Mask 0x%08x\n", pau32ApsChannelMask[0]);
 
-
-            if(ZPS_psAplAibGetAib()->pau32ApsChannelMask[0])
+            if (pau32ApsChannelMask[0])
             {
                 BDB_vSetRejoinFilter();
                 eStatus = ZPS_eAplZdoRejoinNetwork(eRejoinType);
@@ -606,16 +615,17 @@ PUBLIC void BDB_vRejoinCycle(bool_t bSkipDirectJoin)
      * apsUseInsecureJoin attribute of the AIB has a value of TRUE, then the
      * device should follow the procedure outlined in section 3.6.1.4.1 for
      * joining a network ... */
-    if(TRUE == ZPS_psAplAibGetAib()->bApsUseInsecureJoin)
+    if (TRUE == ZPS_bAplAibGetApsUseInsecureJoin())
     {
         /* If u64ApsUseExtendedPanid is set to 0 by application then clearing the
          * Trust Center link key link key to be successful during TCLK procedure
          * if accidental same network reappears */
-        if(ZPS_psAplAibGetAib()->u64ApsUseExtendedPanid == 0)
+        if (ZPS_u64AplAibGetApsUseExtendedPanId() == 0)
         {
             ZPS_teStatus eStatus;
             DBG_vPrintf(TRACE_BDB,"BDB: Rejoin attempts failed; attempting Join with association \n");
-            eStatus = ZPS_eAplZdoRemoveLinkKey(ZPS_psAplAibGetAib()->u64ApsTrustCenterAddress);
+
+            eStatus = ZPS_eAplZdoRemoveLinkKey(ZPS_eAplAibGetApsTrustCenterAddress());
             if(eStatus != ZPS_E_SUCCESS)
             {
                 DBG_vPrintf(TRACE_BDB,"BDB: Could not remove the trust center link key !\n");
@@ -741,8 +751,9 @@ PRIVATE void vInitAttribs()
 
     #ifdef BDB_JOIN_USES_INSTALL_CODE_KEY
 	{
-	    ZPS_tsAplAib *psAib = ZPS_psAplAibGetAib();
-        sBDB.sAttrib.bbdbJoinUsesInstallCodeKey = psAib->bUseInstallCode = (BDB_JOIN_USES_INSTALL_CODE_KEY) ?   TRUE  :  FALSE;
+        bool bUseInstallCode = (BDB_JOIN_USES_INSTALL_CODE_KEY) ? TRUE : FALSE;
+        sBDB.sAttrib.bbdbJoinUsesInstallCodeKey = bUseInstallCode;
+        ZPS_eAplAibSetApsUseInstallCode(bUseInstallCode);
 	}
     #else
         sBDB.sAttrib.bbdbJoinUsesInstallCodeKey = FALSE; /* Default Value */
@@ -857,7 +868,7 @@ PUBLIC void BDB_vSetRejoinFilter()
     sBeaconFilter.u8ListSize = 0;
     sBeaconFilter.pu64ExtendPanIdList = NULL;
 
-    u64Epid = ZPS_psAplAibGetAib()->u64ApsUseExtendedPanid;
+    u64Epid = ZPS_u64AplAibGetApsUseExtendedPanId();
     if ((u64Epid > 0) &&
         (u64Epid < 0xffffffffffffffffUL))
     {

@@ -37,7 +37,7 @@ extern "C" {
 #include "zcl.h"
 #include "zcl_options.h"
 #include "OTA.h"
-#if !(defined JENNIC_CHIP_FAMILY_JN516x) && !(defined JENNIC_CHIP_FAMILY_JN517x) && !(defined APP0)
+#if !(defined JENNIC_CHIP_FAMILY_JN516x) && !(defined JENNIC_CHIP_FAMILY_JN517x) && !(defined APP0) && !(defined NCP_HOST)
 #include "OtaSupport.h"
 #endif
 /****************************************************************************/

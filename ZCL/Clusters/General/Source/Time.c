@@ -32,7 +32,7 @@
 
 #include <jendefs.h>
 #include "zcl.h"
-#include "Time.h"
+#include "ZclTime.h"
 #include "zcl_options.h"
 
 #ifdef CLD_TIME

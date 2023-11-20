@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020,2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -41,14 +41,17 @@
 
 #include "portmacro.h"
 #if !(defined JENNIC_CHIP_FAMILY_JN516x) && !(defined JENNIC_CHIP_FAMILY_JN517x)
+#ifndef K32W1480_SERIES
 #include "fsl_aes.h"
+#else
+#include "SecLib.h"
+#endif
 #endif
 #include "aessw_ccm.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
 #define ADJUST_POWER        TRUE
-#define TL_SCAN_LQI_MIN    (100)
 
 #ifndef DEBUG_JOIN
 #define TRACE_JOIN            FALSE
@@ -209,9 +212,9 @@ PUBLIC uint8 BDB_u8TlEncryptKey( uint8* au8InData,
     sExpanded.u32register3 = u32ResponseId;
 #else
     sExpanded.u32register0 = u32Reverse(u32TransId);
-	sExpanded.u32register1 = u32Reverse(u32TransId);
-	sExpanded.u32register2 = u32Reverse(u32ResponseId);
-	sExpanded.u32register3 = u32Reverse(u32ResponseId);
+    sExpanded.u32register1 = u32Reverse(u32TransId);
+    sExpanded.u32register2 = u32Reverse(u32ResponseId);
+    sExpanded.u32register3 = u32Reverse(u32ResponseId);
 #endif
 
     switch (u8KeyIndex)
@@ -229,8 +232,12 @@ PUBLIC uint8 BDB_u8TlEncryptKey( uint8* au8InData,
                                   &sExpanded,
                                   &sTransportKey);
 #else
+#ifndef K32W1480_SERIES
             AES_SetKey(AES0, au8TLMasterKey, AESSW_BLK_SIZE);
             AES_EncryptEcb(AES0, (uint8*)&sExpanded, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
+#else
+            AES_128_ECB_Encrypt((uint8*)&sExpanded,AESSW_BLK_SIZE,au8TLMasterKey,(uint8*)&sTransportKey);
+#endif
 #endif
             break;
         case TL_CERTIFICATION_KEY_INDEX:
@@ -240,8 +247,12 @@ PUBLIC uint8 BDB_u8TlEncryptKey( uint8* au8InData,
                                   &sExpanded,
                                   &sTransportKey);
 #else
+#ifndef K32W1480_SERIES
             AES_SetKey(AES0, au8TLCertKey, AESSW_BLK_SIZE);
             AES_EncryptEcb(AES0, (uint8*)&sExpanded, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
+#else
+            AES_128_ECB_Encrypt((uint8*)&sExpanded,AESSW_BLK_SIZE,au8TLCertKey,(uint8*)&sTransportKey);
+#endif
 #endif
             break;
 
@@ -265,8 +276,12 @@ PUBLIC uint8 BDB_u8TlEncryptKey( uint8* au8InData,
                          &sDataIn,
                          &sDataOut);
 #else
+#ifndef K32W1480_SERIES
     AES_SetKey(AES0, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
     AES_EncryptEcb(AES0, (uint8*)&sDataIn, (uint8*)&sDataOut, AESSW_BLK_SIZE);
+#else
+    AES_128_ECB_Encrypt((uint8*)&sDataIn,AESSW_BLK_SIZE,(uint8*)&sTransportKey,(uint8*)&sDataOut);
+#endif
 #endif
 #if ( JENNIC_CHIP_FAMILY == JN517x) && (defined LITTLE_ENDIAN_PROCESSOR)
     vSwipeEndian( &sAesBlock, &sDataOut, REG_TO_BLOCK);
@@ -327,8 +342,12 @@ PUBLIC uint8 BDB_eTlDecryptKey( uint8* au8InData,
                                   &sExpanded,
                                   &sTransportKey);
 #else
+#ifndef K32W1480_SERIES
             AES_SetKey(AES0, au8TLMasterKey, AESSW_BLK_SIZE);
-        	AES_EncryptEcb(AES0, (uint8*)&sExpanded, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
+            AES_EncryptEcb(AES0, (uint8*)&sExpanded, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
+#else
+            AES_128_ECB_Encrypt((uint8*)&sExpanded,AESSW_BLK_SIZE,au8TLMasterKey,(uint8*)&sTransportKey);
+#endif
 #endif
             break;
         case TL_CERTIFICATION_KEY_INDEX:
@@ -338,8 +357,12 @@ PUBLIC uint8 BDB_eTlDecryptKey( uint8* au8InData,
                                   &sExpanded,
                                   &sTransportKey);
 #else
+#ifndef K32W1480_SERIES
             AES_SetKey(AES0, au8TLCertKey, AESSW_BLK_SIZE);
-        	AES_EncryptEcb(AES0, (uint8*)&sExpanded, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
+            AES_EncryptEcb(AES0, (uint8*)&sExpanded, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
+#else
+            AES_128_ECB_Encrypt((uint8*)&sExpanded,AESSW_BLK_SIZE,au8TLCertKey,(uint8*)&sTransportKey);
+#endif
 #endif
             break;
 
@@ -361,8 +384,12 @@ PUBLIC uint8 BDB_eTlDecryptKey( uint8* au8InData,
                   au8InData,
                   au8OutData);
 #else
+#ifndef K32W1480_SERIES
     AES_SetKey(AES0, (uint8*)&sTransportKey, AESSW_BLK_SIZE);
     AES_DecryptEcb(AES0, (uint8*)au8InData, (uint8*)au8OutData, AESSW_BLK_SIZE);
+#else
+    AES_128_Decrypt((uint8*)au8InData, (uint8*)&sTransportKey, (uint8*)au8OutData);
+#endif
 #endif
 #ifdef SHOW_KEY
     int i;
@@ -387,7 +414,7 @@ PUBLIC uint8 BDB_eTlDecryptKey( uint8* au8InData,
 PUBLIC bool_t BDB_bTlIsKeySupported(uint8 u8KeyIndex)
 {
     uint16 u16KeyMask = (1<<u8KeyIndex);
-    return (bool_t)(u16KeyMask & TL_SUPPORTED_KEYS);
+    return !!(u16KeyMask & TL_SUPPORTED_KEYS);
 }
 
 /****************************************************************************/

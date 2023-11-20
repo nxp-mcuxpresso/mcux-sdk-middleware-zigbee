@@ -48,10 +48,11 @@ ${PYTHON} - "$@" <<SCRIPT_DOCUMENT
 #
 ###############################################################################
 
-version = "1.5.2.0"
+version = "1.5.3.0"
 maxr = 0
 R23_UPDATES = 0
 R23_INPUTCONFIG = 0
+WWAH_SUPPORT = 0
 
 import os
 import stat
@@ -1037,8 +1038,7 @@ typedef struct {
             ZPS_tsAfEvent *);
     zps_tsRequestKeyRequests *psRequestKeyReqs;
     uint32 u32ReqKeyTimeout;
-    uint8 u8MaxNumSimulRequestKeyReqs;    
-    
+    uint8 u8MaxNumSimulRequestKeyReqs;
 } zps_tsZdoContext;
 
 /**** Context for the ZDO servers data confirms and acks***********/
@@ -1286,6 +1286,17 @@ typedef struct zps_tsApsmeCmdContainer {
     uint8 u8Retries;
 } zps_tsApsmeCmdContainer;
 
+""")
+    if R23_UPDATES:
+        Cfile.write("""
+typedef struct zps_tsPostponedTxFrag{
+    ZPS_tsAplApsdeReqRsp sApsdeReqRsp;
+    uint16 u16APduInstSize;
+    uint8 u8MaxPayloadSize;
+} zps_tsPostponedTxFrag;
+""")
+    Cfile.write("""
+
 typedef struct {
     zps_tsApsmeCmdContainer *psFreeList;
     zps_tsApsmeCmdContainer *psSubmittedList;
@@ -1320,6 +1331,13 @@ typedef struct {
     ZPS_teStatus (*preStartFragmentTransmission)(void *, ZPS_tsAplApsdeReqRsp *, uint16, uint8);
     void (*prvHandleExtendedDataAck)(void *, ZPS_tsNwkNldeDcfmInd *, zps_tuApsAddressingField *, zps_tsExtendedFrameControlField *);
     void (*prvHandleDataFragmentReceive)(void *, ZPS_tsAplApsdeDcfmIndHdr *);
+""")
+    if R23_UPDATES:
+        Cfile.write("""
+    zps_tsPostponedTxFrag sFragPostponedTx;
+    bool bWaitForFragInfo;
+""")
+    Cfile.write("""
     zps_tsApsmeCmdMgr sApsmeCmdMgr;
     zps_tsApsPollTimer sApsPollTimer;
     zps_tsLoopbackDataContext sLoopbackContext;
@@ -1398,7 +1416,13 @@ typedef struct
     uint8  u8VsLeaveRejoin;
     uint8  u8ZedTimeout;
     uint8  u8ZedTimeoutDefault;
-    uint16 u16VerifyLinkCostTransmitRate; 					
+    uint16 u16VerifyLinkCostTransmitRate;
+""")
+    if R23_UPDATES or WWAH_SUPPORT:
+        Cfile.write("""
+    uint16 u16NextPanId;
+""")
+    Cfile.write("""
 
 } zps_tsNwkNibInitialValues;
 
@@ -1704,7 +1728,9 @@ PUBLIC void vZdoServersInit(void);
 
     bindingTables = "NULL"
     if "NULL" != bindingCache or "NULL" != bindingTable:
-        Cfile.write("PRIVATE ZPS_tsAplApsmeBindingTableType s_bindingTables = { %s, %s };\n" % (bindingCache, bindingTable))
+        if R23_UPDATES:
+            bindingCache = ""
+        Cfile.write("PRIVATE ZPS_tsAplApsmeBindingTableType s_bindingTables = { %s, %s };\n" % (bindingTable, bindingCache))
         bindingTables = "&s_bindingTables"
 
     # Group table
@@ -1755,8 +1781,37 @@ PUBLIC void vZdoServersInit(void);
         Cfile.write("ZPS_tsAplApsKeyDescriptorEntry  *psAplDefaultDistributedAPSLinkKey = &s_keyPairTableStorage[%d];\n" % (keyPairTableSize+1))
         Cfile.write("ZPS_tsAplApsKeyDescriptorEntry  *psAplDefaultGlobalAPSLinkKey = &s_keyPairTableStorage[%d];\n" % (keyPairTableSize+2))
         Cfile.write("PRIVATE uint32 au32IncomingFrameCounter[%d];\n" % (keyPairTableSize + 3))
+        if R23_UPDATES:
+            Cfile.write("PRIVATE bool_t abVerifiedFrameCounter[%d];\n" % (keyPairTableSize + 3))
         Cfile.write("PRIVATE ZPS_tsAplApsKeyDescriptorTable s_keyPairTable = { s_keyPairTableStorage, %d };\n\n" % (keyPairTableSize))
         keyPairTable = "&s_keyPairTable"
+
+    if R23_UPDATES:
+        challengeReqTable = "NULL"
+        challengeReqTableSize = 0
+        if hasattr(configNode, "ChallengeReqTable"):
+            challengeReqTableSize = int(configNode.ChallengeReqTable.get("Size"), 0)
+        if challengeReqTableSize == 0:
+            challengeReqTableSize = 10
+        Cfile.write("PRIVATE ZPS_tsAplApsChallengeReqEntry s_challengeReqTableStorage[%d] = {\n" % (challengeReqTableSize))
+        for pck in range(0, (challengeReqTableSize)):
+            Cfile.write("    { 0xFFFFFFFFFFFFFFFF, 0, 0, {} },\n")
+        Cfile.write("};\n")
+        Cfile.write("PRIVATE ZPS_tsAplApsChallengeReqTable s_challengeReqTable = { s_challengeReqTableStorage, %d };\n\n" % (challengeReqTableSize))
+        challengeReqTable = "&s_challengeReqTable"
+
+        fragmentationTable = "NULL"
+        fragmentationTableSize = 0
+        if hasattr(configNode, "FragmentationTable"):
+            fragmentationTableSize = int(configNode.FragmentationTable.get("Size"), 0)
+        if fragmentationTableSize < keyPairTableSize:
+            fragmentationTableSize = keyPairTableSize
+        Cfile.write("PRIVATE ZPS_tsAplApsFragmentationEntry s_fragmentationTableStorage[%d] = {\n" % (fragmentationTableSize))
+        for pck in range(0, (keyPairTableSize)):
+            Cfile.write("    { 0xFFFF, 0, 0 },\n")
+        Cfile.write("};\n")
+        Cfile.write("PRIVATE ZPS_tsAplApsFragmentationCacheTable s_fragmentationTable = { s_fragmentationTableStorage, %d };\n\n" % (fragmentationTableSize))
+        fragmentationTable = "&s_fragmentationTable"
 
     # Application layer information base
     Cfile.write("PRIVATE ZPS_tsAplAib s_sAplAib = {\n")
@@ -1789,6 +1844,7 @@ PUBLIC void vZdoServersInit(void);
     Cfile.write("    FALSE,\n" )
     if R23_UPDATES:
         Cfile.write("    FALSE,\n" ) # ApsZdoRestrictedMode
+        Cfile.write("    FALSE,\n" ) # bRequireLinkKeyEncryptionForApsTransportKey
     Cfile.write("    0,\n") # KeyType
     if not R23_UPDATES:
         nonMemberRadius = 2
@@ -1815,6 +1871,8 @@ PUBLIC void vZdoServersInit(void);
     Cfile.write("    %s,\n" % (bindingTables))
     Cfile.write("    %s,\n" % (groupTable))
     Cfile.write("    %s,\n" % (keyPairTable))
+    if R23_UPDATES:
+        Cfile.write("   %s,\n" % (fragmentationTable))
     # TODO Default link key setup from config when added to editor
     if keyPairTableSize == 0:
         Cfile.write("    NULL,\n")
@@ -1827,7 +1885,11 @@ PUBLIC void vZdoServersInit(void);
         apsSecurityTimeoutPeriod = int(configNode.get("apsSecurityTimeoutPeriod"), 0)
     Cfile.write("    0x%04x,\n" % (apsSecurityTimeoutPeriod))
     if R23_UPDATES:
+        Cfile.write("    %s,\n" % (challengeReqTable))
         Cfile.write("    ZPS_TLV_G_SUPPKEYNEGMETH_STATKEYREQ,\n") # u8ApsSupportedKeyNegotiationMethods
+        Cfile.write("    5,\n") # u8ApsChallengePeriodTimeoutSeconds;
+        Cfile.write("    0,\n") # u32ApsChallengeFrameCounter
+        Cfile.write("    abVerifiedFrameCounter,\n")
     if keyPairTableSize == 0:
         Cfile.write("    NULL,\n")
     else:
@@ -2042,7 +2104,17 @@ PUBLIC void vZdoServersInit(void);
     if not R23_UPDATES:
         Cfile.write("    %s,\n" % (configNode.NodeDescriptor.get("ComplexDescriptorAvailable").upper()))
         Cfile.write("    %s,\n" % (configNode.NodeDescriptor.get("UserDescriptorAvailable").upper()))
-    Cfile.write("    0,\n")
+        Cfile.write("    0,\n")
+    else:
+        if hasattr(configNode.NodeDescriptor, "FragmentationSupport"):
+            fragmentationSupport = int(configNode.NodeDescriptor.get("FragmentationSupport"), 0)
+            if fragmentationSupport == 1:
+                Cfile.write("    1,\n")
+            else:
+                Cfile.write("    0,\n")
+        else:
+            Cfile.write("    0,\n")
+        Cfile.write("    0,\n")
     localFrequencyBand = 0
     if (tempinterface > 0):
         if (tempinterface & 1):
@@ -2331,7 +2403,11 @@ PRIVATE const zps_tsNwkNibInitialValues s_sNibInitialValues =
     Cfile.write("""
     6,
     8,
-    0/* u16VerifyLinkCostTransmitRate */
+    0, """) #/* u16VerifyLinkCostTransmitRate */
+    if R23_UPDATES or WWAH_SUPPORT: # u16NextPanId
+        Cfile.write("""
+    65535""")
+    Cfile.write("""
 };
 
 """)
@@ -2603,6 +2679,9 @@ PRIVATE const ZPS_tsNwkNibTbl s_sNwkTbl = {
         Cfile.write("        zps_vHandleApsdeDataFragInd,\n")
     else:
         Cfile.write("        zps_vHandleApsdeDataFragIndNotSupported,\n")
+    if R23_UPDATES:
+        Cfile.write("        {},\n")
+        Cfile.write("        FALSE,\n")
 
     # apsme command manager
     Cfile.write("        { &s_sApsmeCmdContainer_1, NULL },\n")
@@ -3110,6 +3189,9 @@ if None == re.search('_R23', options.zigbeeAplLibFSP):
 else:
     print("R23 mode for APL library file '%s'.\n" % options.zigbeeAplLibFSP)
     R23_UPDATES = 1
+
+if None != re.search('_WWAH', options.zigbeeAplLibFSP):
+    WWAH_SUPPORT = 1
 
 if None != options.outputDir and (not os.path.exists(options.outputDir)):
     print("ERROR: Output directory '%s' does not exist.\n" % options.outputDir)

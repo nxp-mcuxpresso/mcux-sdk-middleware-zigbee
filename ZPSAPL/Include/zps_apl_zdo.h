@@ -129,6 +129,7 @@ PUBLIC ZPS_teStatus zps_eAplZdoAddReplaceLinkKey(void *, uint64 , uint8 [ZPS_SEC
 PUBLIC ZPS_teStatus zps_eAplZdoRemoveLinkKey(void *, uint64 );
 PUBLIC ZPS_teStatus zps_eAplZdoManyToOneRouteRequest(void *, bool , uint8 );
 PUBLIC ZPS_teStatus zps_eAplZdoRouteRequest(void *, uint16 , uint8 );
+PUBLIC uint8 zps_u8AplZdoGetRadioChannel(void *);
 PUBLIC ZPS_teDevicePermissions zps_eAplTrustCenterFindDevice(void *pvApl, uint64 u64DeviceAddr);
 PUBLIC void zps_eAplZdoSetDevicePermission(void* pvApl, ZPS_teDevicePermissions ePermissions);
 PUBLIC void zps_eAplZdoRegisterZdoFilterCallback(void* pvApl, void* fnPtr);
@@ -443,7 +444,7 @@ ZPS_APL_INLINE uint16 ZPS_u16AplZdoLookupAddr(uint64 u64ExtAddr)
 ZPS_APL_INLINE uint8 ZPS_u8AplZdoGetRadioChannel(void) ZPS_ZDO_ALWAYS_INLINE;
 ZPS_APL_INLINE uint8 ZPS_u8AplZdoGetRadioChannel(void)
 {
-    return zps_psAplZdoGetNib(ZPS_pvAplZdoGetAplHandle())->sPersist.u8VsChannel;
+    return zps_u8AplZdoGetRadioChannel(ZPS_pvAplZdoGetAplHandle());
 }
 
 ZPS_APL_INLINE uint8 ZPS_u8AplZdoGetAuxRadioChannel(void) ZPS_ZDO_ALWAYS_INLINE;

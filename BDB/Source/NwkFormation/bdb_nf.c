@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020, 2023 NXP.
  *
  * NXP Confidential. 
  * 
@@ -131,6 +131,8 @@ PUBLIC BDB_teStatus BDB_eNfStartNwkFormation(void)
     uint8_t u8ScanChannel = 0;
     uint32_t u32CurApsChanMask = 0;
 #endif
+    uint8_t u8ChannelMasksCount = 0;
+    uint32_t *pau32ApsChannelMask;
 
     if(!(sBDB.sAttrib.u8bdbCommissioningMode & BDB_COMMISSIONING_MODE_NWK_FORMATION) || \
         (ZPS_ZDO_DEVICE_ENDDEVICE == ZPS_eAplZdoGetDeviceType()))
@@ -165,16 +167,18 @@ PUBLIC BDB_teStatus BDB_eNfStartNwkFormation(void)
         u32ScanChannels = sBDB.sAttrib.u32bdbSecondaryChannelSet;
     }
     /* Backup and restore after NwkForm confirmation */
-    u32BackUpApsChannelMask = ZPS_psAplAibGetAib()->pau32ApsChannelMask[0];
-    ZPS_psAplAibGetAib()->pau32ApsChannelMask[0] = u32ScanChannels;
+    pau32ApsChannelMask = ZPS_pu32AplAibGetApsChannelMask(&u8ChannelMasksCount);
+    u32BackUpApsChannelMask = pau32ApsChannelMask[0];
+    ZPS_eAplAibSetApsChannelMask(u32ScanChannels);
 #else
     /* Parse mask to extract channel masks */
     bDoPrimaryScan = FALSE;
 
     /* Backup and restore after NwkForm confirmation */
     u32ScanChannels = sBDB.sAttrib.u32bdbPrimaryChannelSet;
-    u32BackUpApsChannelMask = ZPS_psAplAibGetAib()->pau32ApsChannelMask[0];
-    ZPS_psAplAibGetAib()->pau32ApsChannelMask[0] = 0;
+    pau32ApsChannelMask = ZPS_pu32AplAibGetApsChannelMask(&u8ChannelMasksCount);
+    u32BackUpApsChannelMask = pau32ApsChannelMask[0];
+    ZPS_eAplAibSetApsChannelMask(0);
 
     /* For SubG, the number of channels exceeds one 32bit quantity (62 channels).
      * As such, in order to still retain compatibility with the 2G4 spirit,
@@ -308,9 +312,13 @@ PUBLIC void BDB_vNfStateMachine(BDB_tsZpsAfEvent *psZpsAfEvent)
  ****************************************************************************/
 PUBLIC void BDB_vNfFormCentralizedNwk(void)
 {
+#ifndef NCP_HOST
     #if (BDB_SET_DEFAULT_TC_POLICY == TRUE)
         ZPS_vTCSetCallback(vNfTcCallback);
     #endif
+#else
+/* TODO: If the user wants to change this, the NCP needs to change */
+#endif
 
     ZPS_eAplZdoStartStack();
 }
@@ -330,7 +338,10 @@ PUBLIC void BDB_vNfFormCentralizedNwk(void)
  ****************************************************************************/
 PRIVATE void vNfDiscoverNwk()
 {
+    uint32_t *pau32ApsChannelMask;
+    uint8_t u8ChannelMasksCount;
     ZPS_teStatus eStatus;
+
     /* Set the start up parameters - To be used later while forming - ZPS_EVENT_NWK_DISCOVERY_COMPLETE */
     sStartParams.sNwkParams.u8LogicalChannel = BDB_u8PickChannel(u32ScanChannels);
     sStartParams.sNwkParams.u16NwkAddr = RND_u32GetRand(1, 0xfffe);
@@ -352,12 +363,12 @@ PRIVATE void vNfDiscoverNwk()
 
     ZPS_u8MacMibIeeeSetPolicy(FALSE);
 #endif
+    pau32ApsChannelMask = ZPS_pu32AplAibGetApsChannelMask(&u8ChannelMasksCount);
+    DBG_vPrintf(TRACE_BDB, "BDB: Disc to Form 0x%08x \n",pau32ApsChannelMask[0]);
 
-    DBG_vPrintf(TRACE_BDB, "BDB: Disc to Form 0x%08x \n",ZPS_psAplAibGetAib()->pau32ApsChannelMask[0]);
     ZPS_vNwkNibClearDiscoveryNT(ZPS_pvAplZdoGetNwkHandle());
 
-    eStatus = ZPS_eAplZdoDiscoverNetworks(ZPS_psAplAibGetAib()->pau32ApsChannelMask[0]);
-
+    eStatus = ZPS_eAplZdoDiscoverNetworks(pau32ApsChannelMask[0]);
     if(ZPS_E_SUCCESS != eStatus)
     {
         DBG_vPrintf(TRACE_BDB,"BDB: ZPS_eAplZdoDiscoverNetworks failed %04x !\n", eStatus);
@@ -454,15 +465,16 @@ PRIVATE void vNfRetryNwkFormation(void)
         sBDB.eState = E_STATE_BASE_FAIL;
         eNF_State = E_NF_IDLE;
         sBdbEvent.eEventType = BDB_EVENT_NWK_FORMATION_FAILURE;
-        ZPS_psAplAibGetAib()->pau32ApsChannelMask[0] = u32BackUpApsChannelMask;
-        APP_vBdbCallback(&sBdbEvent);
 
+        ZPS_eAplAibSetApsChannelMask(u32BackUpApsChannelMask);
+        APP_vBdbCallback(&sBdbEvent);
     }
     else
     {
         bDoPrimaryScan = FALSE;
         u32ScanChannels = sBDB.sAttrib.u32bdbSecondaryChannelSet;
-        ZPS_psAplAibGetAib()->pau32ApsChannelMask[0] = u32ScanChannels;
+
+        ZPS_eAplAibSetApsChannelMask(u32ScanChannels);
         if(ZPS_ZDO_DEVICE_COORD == ZPS_eAplZdoGetDeviceType())
         {
             DBG_vPrintf(TRACE_BDB,"BDB: Forming Centralized Nwk \n");
@@ -493,6 +505,7 @@ PRIVATE void vNfRetryNwkFormation(void)
 PRIVATE bool_t bNfSearchDiscNt(uint64 u64EpId, uint16 u16PanId)
 {
     int i;
+#ifndef NCP_HOST
     ZPS_tsNwkNib *psNib = ZPS_psNwkNibGetHandle(ZPS_pvAplZdoGetNwkHandle());
     for (i = 0; i < psNib->sTblSize.u8NtDisc; i++)
     {
@@ -503,8 +516,10 @@ PRIVATE bool_t bNfSearchDiscNt(uint64 u64EpId, uint16 u16PanId)
         }
     }
     return TRUE;
+#else
+    return eSL_SearchExtendedPanId(u64EpId, u16PanId);
+#endif
 }
-
 #if (BDB_SET_DEFAULT_TC_POLICY == TRUE)
 /****************************************************************************
  *
@@ -520,6 +535,7 @@ PRIVATE bool_t bNfSearchDiscNt(uint64 u64EpId, uint16 u16PanId)
  * bool_t
  *
  ****************************************************************************/
+#ifndef NCP_HOST
 PRIVATE bool_t vNfTcCallback (uint16 u16ShortAddress,
                              uint64 u64DeviceAddress,
                              uint64 u64ParentAddress,
@@ -570,7 +586,7 @@ PRIVATE bool_t vNfTcCallback (uint16 u16ShortAddress,
      * it is mandatory to send FALSE*/
      return TRUE;
 }
-
+#endif
 #endif
 
 /****************************************************************************/

@@ -38,8 +38,11 @@
 #if !(defined JENNIC_CHIP_FAMILY_JN516x) && !(defined JENNIC_CHIP_FAMILY_JN517x)
 #include "OTA_private.h"
 #include "OtaSupport.h"
+
+#if !defined(K32W1480_SERIES) && !defined(NCP_HOST)
 #include "fsl_reset.h"
 #include "rom_psector.h"
+#endif
 
 #ifdef APP0
 #include "fsl_flash.h"
@@ -238,7 +241,7 @@ PUBLIC bool_t bOtaIsImageAuthenticated(void)
 
 PUBLIC bool_t bOtaIsAuthenticationEnabled(void)
 {
-#if (defined JENNIC_CHIP_FAMILY_JN518x)   
+#if ((defined JENNIC_CHIP_FAMILY_JN518x) && !defined(NCP_HOST))
     return (psector_Read_ImgAuthLevel()>0);
 #else
     return false;
