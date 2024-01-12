@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020 NXP
  *
  * NXP Confidential. 
  * 
@@ -89,6 +89,13 @@ extern "C" {
                 #define OTA_APP1_MAX_SIZE                    (uint32)(136 * 1024)  /* Max size in bytes must be in multiples of 512 bytes*/
             #endif
        #endif
+#endif
+
+/* TODO OTA: These defines should be extracted in platform dependent code*/
+#ifdef K32W1480_SERIES
+#define K32W1480_OTA_HDR_SIZE (80)
+#define K32W1480_OTA_NONCE_SIZE (16)
+#define K32W1480_OTA_LNKKEY_SIZE (16)
 #endif
 
 #ifndef OTA_MAX_IMAGES_PER_ENDPOINT
@@ -986,6 +993,15 @@ PUBLIC teZCL_Status eOTA_HandleImageVerification(
                     uint8                       u8DstEndpoint,
                     teZCL_Status                eImageVerificationStatus);
 #endif
+
+/*
+ * Platform dependent function to determine the location of
+ * various sections in the downloaded image.
+ */
+PUBLIC uint32_t u32OTA_DlOtaHdrOffset(void);
+PUBLIC uint32_t u32OTA_DlLinkKeyOffset(void);
+PUBLIC uint32_t u32OTA_DlEncOffset(void);
+PUBLIC uint32_t u32OTA_DlNonceOffset(void);
 
 #if (defined JENNIC_CHIP_FAMILY_JN518x)
 PUBLIC bool_t bAHI_FlashInit(

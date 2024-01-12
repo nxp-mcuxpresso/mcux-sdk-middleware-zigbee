@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020 NXP
  *
  * NXP Confidential. 
  * 
@@ -37,7 +37,7 @@ extern "C" {
 #include "zcl.h"
 #include "zcl_options.h"
 #include "OTA.h"
-#if !(defined JENNIC_CHIP_FAMILY_JN516x) && !(defined JENNIC_CHIP_FAMILY_JN517x) && !(defined APP0) && !(defined NCP_HOST)
+#if !(defined JENNIC_CHIP_FAMILY_JN516x) && !(defined JENNIC_CHIP_FAMILY_JN517x) && !(defined APP0)
 #include "OtaSupport.h"
 #endif
 /****************************************************************************/
@@ -168,7 +168,7 @@ PUBLIC bool_t bOtaIsImageAuthenticated(void);
 PUBLIC bool_t bOtaIsAuthenticationEnabled(void);
 
 PUBLIC void vOtaSwitchLoads(void);
-PUBLIC uint32 eOTA_OtaOffset(void);
+PUBLIC void vOtaFlagNewImage(void);
 PUBLIC tsReg128 eOTA_retOtaUseKey(void);
 
 #ifdef OTA_CLIENT

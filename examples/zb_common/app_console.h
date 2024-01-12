@@ -6,46 +6,47 @@
 */
 
 
-#ifndef APP_LEDS_H
-#define APP_LEDS_H
+#ifndef  CONSOLE_H_INCLUDED
+#define  CONSOLE_H_INCLUDED
 
-#include <EmbeddedTypes.h>
+#if defined __cplusplus
+extern "C" {
+#endif
+
+/****************************************************************************/
+/***        Include Files                                                 ***/
+/****************************************************************************/
+#include "EmbeddedTypes.h"
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
+#ifndef TRACE_CONSOLE
+#define TRACE_CONSOLE   FALSE
+#endif
 
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
 
-
-typedef enum {
-    APP_E_LEDS_LED_1 = 0,
-    APP_E_LEDS_LED_2,
-} APP_teLeds;
-
-typedef enum {
-	APP_E_LED_OFF = 0,
-	APP_E_LED_ON
-} APP_teLedStates;
-
-#define APP_LEDS_NUM                     (2UL)
-
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-void APP_vLedInitialise(void);
-void APP_vSetLed(uint8_t u8Led, bool_t bState);
-uint8_t APP_u8GetLedStates(void);
-
+void APP_vConsoleInitialise(void);
+bool_t APP_bConsoleReceiveChar(uint8_t* pu8Data);
 
 /****************************************************************************/
-/***        External Variables                                            ***/
+/***        Exported Variables                                            ***/
 /****************************************************************************/
 
+#if defined __cplusplus
+}
+#endif
+
+#endif  /* CONSOLE_H_INCLUDED */
+
 /****************************************************************************/
-/****************************************************************************/
+/***        END OF FILE                                                   ***/
 /****************************************************************************/
 
-#endif /*APP_LEDS_H*/
+

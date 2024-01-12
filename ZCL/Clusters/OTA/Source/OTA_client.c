@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020 NXP
  *
  * NXP Confidential. 
  * 
@@ -39,13 +39,15 @@
 #include "zps_apl_af.h"
 #include "dbg.h"
 #if (defined JENNIC_CHIP_FAMILY_JN518x)
-#include "fsl_wwdt.h"
-#include "OtaSupport.h"
+#include "zb_platform.h"
 #ifdef WEAK
 #undef WEAK
 #endif
+#ifndef K32W1480_SERIES
 #include "rom_psector.h"
 #include "rom_api.h"
+#endif
+#include "OtaSupport.h"
 #endif
 #ifndef TRACE_OTA_DEBUG
 #define TRACE_OTA_DEBUG FALSE
@@ -726,6 +728,7 @@ PUBLIC  teZCL_Status eOTA_ClientSwitchToNewImage(uint8 u8SourceEndPointId)
     {
         if(!psOTA_Common->sOTACallBackMessage.sPersistedData.bIsNullImage)
         {
+#ifndef K32W1480_SERIES
             uint8 au8MagicNumbers[12] = {0};
             uint32 u32Offset;
 #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x) || (defined APP0)
@@ -778,6 +781,7 @@ PUBLIC  teZCL_Status eOTA_ClientSwitchToNewImage(uint8 u8SourceEndPointId)
 #endif
               )
             {
+#endif
                 /* persisted data changed send event to the  application to save it*/
                 eOtaSetEventTypeAndGiveCallBack(psOTA_Common, E_CLD_OTA_INTERNAL_COMMAND_SAVE_CONTEXT,psEndPointDefinition);
 
@@ -811,17 +815,23 @@ PUBLIC  teZCL_Status eOTA_ClientSwitchToNewImage(uint8 u8SourceEndPointId)
                 }
 #else
                 /* Indicate new image is available */
-                OTA_SetNewImageFlag();
+                vOtaFlagNewImage();
+#ifdef K32W1480_SERIES
+                vOtaClientUpgMgrMapStates(E_CLD_OTA_STATUS_NORMAL,psEndPointDefinition,psOTA_Common);
+                eOtaSetEventTypeAndGiveCallBack(psOTA_Common, E_CLD_OTA_INTERNAL_COMMAND_SAVE_CONTEXT,psEndPointDefinition);
+#endif
 #endif
 #endif
 
                 vOtaSwitchLoads();
+#ifndef K32W1480_SERIES
             }
             else
             {
                 DBG_vPrintf(TRACE_VERIF, "Image header check FAILED\n");
                 eOtaSetEventTypeAndGiveCallBack(psOTA_Common, E_CLD_OTA_INTERNAL_COMMAND_FAILED_VALIDATING_UPGRADE_IMAGE,psEndPointDefinition);
             }
+#endif
         }
     }
     return eStatus;
@@ -927,7 +937,7 @@ PUBLIC  teZCL_Status eOTA_HandleImageVerification(uint8 u8SourceEndpoint,
 #endif
 #endif
 #endif
-    uint32 u32OtaOffset = eOTA_OtaOffset();
+    uint32 u32OtaOffset = u32OTA_DlOtaHdrOffset();
 
     if((eStatus = eOtaFindCluster(u8SourceEndpoint,
                                   &psEndPointDefinition,
@@ -1118,7 +1128,7 @@ PUBLIC  teZCL_Status eOTA_HandleImageVerification(uint8 u8SourceEndpoint,
             /* Reset watchdog as CRC calculation takes a while */
             vAHI_WatchdogRestart();
 #else
-            WWDT_Refresh(WWDT);
+            zbPlatWdogKick();
 #endif
         }
         ZPS_vFinalCrc32 (&u32CalculatedCrc);

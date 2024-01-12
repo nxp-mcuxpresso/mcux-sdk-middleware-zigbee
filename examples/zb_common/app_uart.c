@@ -1,5 +1,5 @@
 /*
-* Copyright 2019,2023 NXP
+* Copyright 2019, 2023 NXP
 * All rights reserved.
 *
 * SPDX-License-Identifier: BSD-3-Clause
@@ -19,10 +19,6 @@
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
-
-#ifndef TRACE_UART
-#define TRACE_UART	FALSE
-#endif
 
 /****************************************************************************/
 /***        Type Definitions                                              ***/
@@ -49,7 +45,7 @@
 /****************************************************************************/
 /****************************************************************************
  *
- * NAME: UART_bBufferReceive
+ * NAME: UART_bReceiveChar
  *
  * DESCRIPTION:
  *
@@ -58,9 +54,9 @@
  * RETURNS:
  *
  ****************************************************************************/
-bool_t UART_bBufferReceive ( uint8_t* pu8Data )
+bool_t UART_bReceiveChar ( uint8_t* pu8Data )
 {
-    return zbPlatUartReceive(pu8Data);
+    return zbPlatUartReceiveChar(pu8Data);
 }
 
 /****************************************************************************
@@ -68,9 +64,10 @@ bool_t UART_bBufferReceive ( uint8_t* pu8Data )
  * NAME: vUART_Init
  *
  * DESCRIPTION:
+ * Initializes UART component
  *
  * PARAMETERS:      Name            RW  Usage
- * None.
+ *                  device              Holds platform dependent information
  *
  * RETURNS:
  * None.
@@ -78,9 +75,9 @@ bool_t UART_bBufferReceive ( uint8_t* pu8Data )
  * NOTES:
  * None.
  ****************************************************************************/
-void UART_vInit(void)
+void UART_vInit(void *device)
 {
-    (void)zbPlatUartInit();
+    (void)zbPlatUartInit(device);
 }
 
 /****************************************************************************
@@ -147,6 +144,50 @@ void UART_vSendString(char* sMessage)
     {
     	UART_vTxChar(sMessage[u32Counter]);
     }
+}
+
+/****************************************************************************
+ *
+ * NAME: UART_bReceiveBuffer
+ *
+ * DESCRIPTION:
+ * Tries to receive a chars buffer of length provided by user
+ *
+ * PARAMETERS:      Name            RW  Usage
+ *                  u8Buffer            Buffer to store received characters
+ *                  pu32BufferLen       Number of characters to receive. At return
+ *                                      will hold the actual number of characters
+ *                                      received
+ *
+ * RETURNS:
+ *  TRUE  if at least one character is available
+ *  FALSE otherwise
+ *
+ ****************************************************************************/
+bool_t UART_bReceiveBuffer(uint8_t* u8Buffer, uint32_t *pu32BufferLen)
+{
+    return zbPlatUartReceiveBuffer(u8Buffer, pu32BufferLen);
+}
+
+/****************************************************************************
+ *
+ * NAME: UART_vFree
+ *
+ * DESCRIPTION:
+ * Release allocated resources
+ *
+ * PARAMETERS:      Name            RW  Usage
+ * None.
+ *
+ * RETURNS:
+ * None.
+ *
+ * NOTES:
+ * None.
+ ****************************************************************************/
+void UART_vFree(void)
+{
+    (void)zbPlatUartFree();
 }
 /****************************************************************************/
 /***        END OF FILE                                                   ***/

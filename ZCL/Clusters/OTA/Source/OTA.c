@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020 NXP
  *
  * NXP Confidential. 
  * 
@@ -42,11 +42,11 @@
 #include "sbmce_cb.h"
 #endif
 #include "aessw_ccm.h"
-#include "rnd_pub.h"
+#include "zb_platform.h"
 #ifndef TRACE_OTA_DEBUG
 #define TRACE_OTA_DEBUG FALSE
 #endif
-#if (defined JENNIC_CHIP_FAMILY_JN518x) && !defined(NCP_HOST)
+#if (defined JENNIC_CHIP_FAMILY_JN518x) && !(defined(NCP_HOST) || defined(K32W1480_SERIES))
 #include "fsl_aes.h"
 #ifdef WEAK
 #undef WEAK
@@ -316,26 +316,6 @@ PUBLIC  teZCL_Status eOTA_Create(
             sOtaUseKey.u32register3);
 
     return eZCLstatus;
-}
-/****************************************************************************
- **
- ** NAME:       eOTA_OtaOffset
- **
- ** DESCRIPTION:
- ** Calculates the offset of ota image
- **
- ** PARAMETERS:
- ** None
- ** RETURN:
- ** uint32
- **
- ****************************************************************************/
-PUBLIC uint32 eOTA_OtaOffset(void)
-{
-    uint32 u32OtaOffset;
-
-    u32OtaOffset = ((uint8*)&_FlsOtaHeader) - ((uint8*)&_flash_start);
-    return u32OtaOffset;
 }
 
 #ifdef SOTA_ENABLED
@@ -1373,7 +1353,7 @@ PUBLIC  teZCL_Status eOTA_NewImageLoaded(
                     memcpy(&sOTAHeader[i], &psOTA_CoProcessorOTAHeader->sOTA_ImageHeader[i],
                             sizeof(tsOTA_ImageHeader));
 
-                    psCustomData->sOTACallBackMessage.aServerPrams[OTA_MAX_IMAGES_PER_ENDPOINT+i].u8QueryJitter = (uint8)RND_u32GetRand(0,100);
+                    psCustomData->sOTACallBackMessage.aServerPrams[OTA_MAX_IMAGES_PER_ENDPOINT+i].u8QueryJitter = (uint8)zbPlatCryptoRandomGet(0,100);
                     psCustomData->sOTACallBackMessage.aServerPrams[OTA_MAX_IMAGES_PER_ENDPOINT+i].u32CurrentTime = u32ZCL_GetUTCTime();
                     psCustomData->sOTACallBackMessage.aServerPrams[OTA_MAX_IMAGES_PER_ENDPOINT+i].u32RequestOrUpgradeTime = 0xffffffff;
                     psCustomData->sOTACallBackMessage.aServerPrams[OTA_MAX_IMAGES_PER_ENDPOINT+i].u8DataSize = 0;
@@ -1410,7 +1390,7 @@ PUBLIC  teZCL_Status eOTA_NewImageLoaded(
                     {
                         continue;
                     }
-                    psCustomData->sOTACallBackMessage.aServerPrams[i].u8QueryJitter = (uint8)RND_u32GetRand(0,100);
+                    psCustomData->sOTACallBackMessage.aServerPrams[i].u8QueryJitter = (uint8)zbPlatCryptoRandomGet(0,100);
                     psCustomData->sOTACallBackMessage.aServerPrams[i].u32CurrentTime = u32ZCL_GetUTCTime();
                     psCustomData->sOTACallBackMessage.aServerPrams[i].u32RequestOrUpgradeTime = 0xffffffff;
                     psCustomData->sOTACallBackMessage.aServerPrams[i].u8DataSize = 0;
@@ -1600,7 +1580,7 @@ PUBLIC  teZCL_Status eOTA_ServerSwitchToNewImage(
     uint32 u32Offset;
 
 
-    uint32 u32OtaOffset = eOTA_OtaOffset();
+    uint32 u32OtaOffset = u32OTA_DlOtaHdrOffset();
 #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)    
     uint32 u32CustomerSettings = *((uint32*)FL_INDEX_SECTOR_CUSTOMER_SETTINGS);
 #endif
@@ -2797,8 +2777,10 @@ PUBLIC  bool_t bOtaIsSerializationDataValid(
     uint8 au8ReadBuffer2[50] = {0}; /* Temp Buffer reading */
 
 
-    uint8 *pu8Start = (uint8*)&_flash_start;
     uint8 *pu8LinkKey =    (uint8*)&_FlsLinkKey;
+    uint8 *pu8Start = (uint8*)&_flash_start;
+    // TODO: replace all pu8Start references with functions
+    (void)(pu8Start);
 #ifndef OTA_NO_CERTIFICATE
     uint8 *pu8Cert =       (uint8*)&FlsZcCert;
     uint8 *pu8PrvKey =     (uint8*)&FlsPrivateKey;
@@ -2818,7 +2800,7 @@ PUBLIC  bool_t bOtaIsSerializationDataValid(
 #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
     uint8 au8ivector[OTA_AES_BLOCK_SIZE], au8DataOut[OTA_AES_BLOCK_SIZE],u8Loop;
      tsReg128 sOtaUseKey =  eOTA_retOtaUseKey();
-    uint32 u32OtaOffset = eOTA_OtaOffset();
+    uint32 u32OtaOffset = u32OTA_DlOtaHdrOffset();
 #endif
     uint32 u32Offset;
 #if (defined OTA_INTERNAL_STORAGE) || (defined KSDK2)
@@ -2896,7 +2878,7 @@ PUBLIC  bool_t bOtaIsSerializationDataValid(
     }
 #endif
 #endif
-    u32Offset = pu8LinkKey - pu8Start;
+    u32Offset = u32OTA_DlLinkKeyOffset();
 
 #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x) || (defined APP0)
 #ifdef APP0 /* Building with selective OTA */
@@ -3229,8 +3211,12 @@ PUBLIC void vOTA_EncodeString(tsReg128 *psKey, uint8 *pu8Iv,uint8 * pu8DataOut)
                          &sIv,
                          &sDataOut);
 #else
+#ifndef K32W1480_SERIES
     AES_SetKey(AES0, (uint8*)psKey, AESSW_BLK_SIZE);
     AES_EncryptEcb(AES0, (uint8*)&sIv, (uint8*)&sDataOut, AESSW_BLK_SIZE);
+#else
+    AES_128_ECB_Encrypt((uint8*)&sIv, AESSW_BLK_SIZE, (uint8*)psKey, (uint8*)&sDataOut);
+#endif
 #endif
 
     #if (JENNIC_CHIP_FAMILY == JN517x) && (defined LITTLE_ENDIAN_PROCESSOR)

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020 NXP
  *
  * NXP Confidential. 
  * 
@@ -106,7 +106,17 @@ PUBLIC  void vOtaFlashInitHw ( uint8    u8FlashType,
 #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x) || (defined APP0)
     bAHI_FlashInit(u8FlashType, NULL);
 #else
+#if !(defined(K32W1480_SERIES)) && !(defined(NCP_HOST))
     OTA_ClientInit();
+#elif (defined(K32W1480_SERIES))
+    /* If posted_ops_storage is NULL and posted_ops_sz is 0, the direct operation mode is opted
+     * (no deferred flash transactions)
+     */
+    OTA_SelectInternalStoragePartition();
+    OTA_ServiceInit(NULL, 0);
+#elif (defined(NCP_HOST))
+    OTA_ServiceInit(NULL, 0);
+#endif
 #endif
 }
 /****************************************************************************
@@ -158,10 +168,18 @@ PUBLIC  void vOtaFlashWrite(
 #if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x) || (defined APP0)
     bAHI_FullFlashProgram(u32FlashByteLocation, u16Len, pu8Data);
 #else
+
+#if !(defined(K32W1480_SERIES)) && !(defined(NCP_HOST))
     OTA_PushImageChunkBlocking  ( pu8Data,
                           u16Len,
                           &g_u32ImageOffsetInEEPROM,
                           &u32FlashByteLocation);
+#else
+    OTA_PushImageChunk(pu8Data,
+                       u16Len,
+                       &g_u32ImageOffsetInEEPROM,
+                       &u32FlashByteLocation);
+#endif
 #endif
 
 #ifdef APP0
@@ -220,9 +238,34 @@ PUBLIC  void vOtaSwitchLoads(void)
 #endif
 }
 
+/****************************************************************************
+ **
+ ** NAME:       vOtaFlagNewImage
+ **
+ ** DESCRIPTION:
+ ** Flag FWK OTA there is a new image available
+ **
+ ** PARAMETERS:               Name                           Usage
+ **
+ ** RETURN:
+ ** None
+ ****************************************************************************/
+PUBLIC void vOtaFlagNewImage(void)
+{
+#ifndef K32W1480_SERIES
+    OTA_SetNewImageFlag();
+#else
+    /* TODO OTA: Extract function in platform dependent code */
+    // SB3 Image is located after OTA HDR, NONCE and Link Key
+    OTA_SetNewImageFlagWithOffset(K32W1480_OTA_HDR_SIZE
+            + K32W1480_OTA_NONCE_SIZE
+            + K32W1480_OTA_LNKKEY_SIZE);
+#endif
+}
+
 PUBLIC bool_t bOtaIsImageAuthenticated(void)
 {
-#if (defined JENNIC_CHIP_FAMILY_JN518x)
+#if (defined JENNIC_CHIP_FAMILY_JN518x) && !(defined K32W1480_SERIES) && !(defined(NCP_HOST))
     bool_t authenticationEnabled = bOtaIsAuthenticationEnabled();
     bool_t imgAuthenticated = false; 
     if (authenticationEnabled)
@@ -235,20 +278,82 @@ PUBLIC bool_t bOtaIsImageAuthenticated(void)
     }
     return imgAuthenticated;
 #else
-    return true;
+    return TRUE;
 #endif
 }
 
 PUBLIC bool_t bOtaIsAuthenticationEnabled(void)
 {
-#if ((defined JENNIC_CHIP_FAMILY_JN518x) && !defined(NCP_HOST))
+#if ((defined JENNIC_CHIP_FAMILY_JN518x) && !(defined(NCP_HOST) || (defined K32W1480_SERIES)))
     return (psector_Read_ImgAuthLevel()>0);
 #else
-    return false;
+    return FALSE;
 #endif
 }
 
-#if (defined JENNIC_CHIP_FAMILY_JN518x)
+/* TODO OTA: Extract function in platform dependent code */
+extern uint32 _enc_start;
+/****************************************************************************
+ *
+ ** NAME:       u32OTA_DlOtaHdrOffset
+ **
+ ** DESCRIPTION:
+ ** Calculates the offset of ota hdr in the downloaded image
+ **
+ ** PARAMETERS:
+ ** None
+ ** RETURN:
+ ** uint32
+ **
+ ****************************************************************************/
+PUBLIC uint32 u32OTA_DlOtaHdrOffset(void)
+{
+#ifndef K32W1480_SERIES
+    return ((uint8*)&_FlsOtaHeader) - ((uint8*)&_flash_start);
+#else
+    // OTA Header on K32W1 image is located at offset 0
+    return 0U;
+#endif
+}
+
+PUBLIC uint32_t u32OTA_DlLinkKeyOffset(void)
+{
+#ifndef K32W1480_SERIES
+    return (uint32_t)(&(_FlsLinkKey)) - (uint32_t)(&(_flash_start));
+#else
+    // Link Key on K32W1 image is located after OTA HDR and NONCE
+    return K32W1480_OTA_HDR_SIZE + K32W1480_OTA_NONCE_SIZE; // OTA HDR + NONCE
+#endif
+}
+
+PUBLIC uint32_t u32OTA_DlEncOffset(void)
+{
+#if !defined(K32W1480_SERIES) && !defined(NCP_HOST)
+    return ((uint32)(&(_enc_start))) - (uint32)(&(_flash_start));
+#elif (defined(K32W1480_SERIES))
+    // Encryption starts on Link Key on K32W1 image which is located
+    // after OTA HDR and NONCE
+    return K32W1480_OTA_HDR_SIZE + K32W1480_OTA_NONCE_SIZE; // OTA HDR + NONCE
+#else
+    return 0;
+#endif
+}
+
+PUBLIC uint32_t u32OTA_DlNonceOffset(void)
+{
+#if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
+    return 0x10;
+#else
+#ifndef K32W1480_SERIES
+    return 0x150;
+#else
+    // Nonce on K32W1 image is located after OTA HDR
+    return K32W1480_OTA_HDR_SIZE; // OTA HDR
+#endif
+#endif
+}
+
+#if (defined JENNIC_CHIP_FAMILY_JN518x) && (!defined K32W1480_SERIES)
 #ifdef APP0
 
 

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * Copyright 2020 NXP.
+ * Copyright 2020 NXP
  *
  * NXP Confidential. 
  * 
@@ -35,7 +35,7 @@
 #include "zcl.h"
 #include "OTA.h"
 #include "OTA_private.h"
-#include "rnd_pub.h"
+#include "zb_platform.h"
 #include "dbg.h"
  #ifndef OTA_NO_CERTIFICATE
 #include "eccapi.h"
@@ -192,7 +192,6 @@ PRIVATE bool_t bOtaVerifyString( tsOTA_Common *psOTA_Common,
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
-extern uint32 _enc_start;
 
 /****************************************************************************/
 /***        Exported Functions                                            ***/
@@ -220,7 +219,9 @@ PUBLIC  void vOtaInitStateMachine(tsOTA_Common *psCustomData)
 #ifdef APP0
            g_u16OtaPageIndex = 0;
 #else
+#ifndef K32W1480_SERIES
     OTA_AlignOnReset();
+#endif
 #endif
 #endif
 }
@@ -535,7 +536,11 @@ PRIVATE  void vOtaUpgManClientStateDownloadInProgress(
                                                                     (0xFFFFFFFF - psOTA_Common->sOTACallBackMessage.sPersistedData.sAttributes.u32FileOffset - 1);
         }
 #else
+#ifdef K32W1480_SERIES
+        if(psOTA_Common->sOTACallBackMessage.sPersistedData.u32CurrentFlashOffset % 8192 == 0)
+#else
         if(psOTA_Common->sOTACallBackMessage.sPersistedData.u32CurrentFlashOffset % 1024 == 0)
+#endif
         {
             eOtaSetEventTypeAndGiveCallBack(psOTA_Common, E_CLD_OTA_INTERNAL_COMMAND_SAVE_CONTEXT,psEndPointDefinition);
         }
@@ -1272,15 +1277,11 @@ PRIVATE void vOtaProcessInternalEncryption(
     int i;
     uint32 u32UnEncryptedToWrite;
     uint32 u32EncryptedToWrite;
-    uint32 u32EncryptionStart = ((uint32)(&(_enc_start))) - (uint32)(&(_flash_start));
+    uint32 u32EncryptionStart = u32OTA_DlEncOffset();
     u32EncryptionStart += u32ImageStartAddress;           // adjust to flash area we are writing to
-#if (defined JENNIC_CHIP_FAMILY_JN516x) || (defined JENNIC_CHIP_FAMILY_JN517x)
+
     /*Flash offset */
-    uint32 u32IVLocation = u32ImageStartAddress + 0x10;
-#else
-    /*Flash offset */
-    uint32 u32IVLocation = u32ImageStartAddress + 0x150;
-#endif
+    uint32 u32IVLocation = u32ImageStartAddress + u32OTA_DlNonceOffset();
 
     DBG_vPrintf(TRACE_INT_DECRYPT, "Flash Addr %08x u32EncryptionStart %08x %08x \n",
             u32StartAddress, u32EncryptionStart, u32ImageStartAddress);
@@ -1558,7 +1559,7 @@ PRIVATE bool_t bOtaHandleImageNotify( tsOTA_Common *psOTA_Common,
 #endif
                     if(sReceivedFrame.u16ImageType == sOTAHeader.u16ImageType)
                     {
-                        uint8 u8RandomValue = (uint8)RND_u32GetRand(0,sReceivedFrame.u8QueryJitter);
+                        uint8 u8RandomValue = (uint8)zbPlatCryptoRandomGet(0,sReceivedFrame.u8QueryJitter);
                         bool_t bIsUnicast = OTA_IS_UNICAST(psOTA_Common->sReceiveEventAddress.u8DstAddrMode,psOTA_Common->sReceiveEventAddress.uDstAddress.u16Addr);
 
                         /* Send Query Image Request command */
@@ -1628,7 +1629,7 @@ PRIVATE bool_t bOtaHandleImageNotify( tsOTA_Common *psOTA_Common,
 
                     if(sReceivedFrame.u16ImageType == sOTAHeader.u16ImageType)
                     {
-                        uint8 u8RandomValue = (uint8)RND_u32GetRand(0,sReceivedFrame.u8QueryJitter);
+                        uint8 u8RandomValue = (uint8)zbPlatCryptoRandomGet(0,sReceivedFrame.u8QueryJitter);
                         bool_t bIsUnicast = OTA_IS_UNICAST(psOTA_Common->sReceiveEventAddress.u8DstAddrMode,psOTA_Common->sReceiveEventAddress.uDstAddress.u16Addr);
 
                         /* Send Query Image Request command */
@@ -1667,7 +1668,7 @@ PRIVATE bool_t bOtaHandleImageNotify( tsOTA_Common *psOTA_Common,
 #endif
         for(u8LoopCount = 0; u8LoopCount < u8NumOfImages; u8LoopCount++)
         {
-            uint8 u8RandomValue = (uint8)RND_u32GetRand(0,sReceivedFrame.u8QueryJitter);
+            uint8 u8RandomValue = (uint8)zbPlatCryptoRandomGet(0,sReceivedFrame.u8QueryJitter);
             bool_t bIsUnicast = OTA_IS_UNICAST(psOTA_Common->sReceiveEventAddress.u8DstAddrMode,psOTA_Common->sReceiveEventAddress.uDstAddress.u16Addr);
 
             /* get the OTA header */

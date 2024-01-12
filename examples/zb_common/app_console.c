@@ -9,11 +9,8 @@
 /****************************************************************************/
 /***        Include files                                                 ***/
 /****************************************************************************/
-#include <EmbeddedTypes.h>
-#include "dbg.h"
-#include "app.h"
-#include "app_leds.h"
 #include "zb_platform.h"
+#include "app_console.h"
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -22,10 +19,10 @@
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
+
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
-
 
 /****************************************************************************/
 /***        Exported Variables                                            ***/
@@ -38,62 +35,49 @@
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-/****************************************************************************
- *
- * NAME: APP_vLedInitialise
- *
- * DESCRIPTION:
- * initialise the application leds
- *
- * PARAMETER: void
- *
- * RETURNS: void
- *
- ****************************************************************************/
-void APP_vLedInitialise(void)
-{
-    (void)zbPlatLedInit(APP_LEDS_NUM);
-}
-
-/****************************************************************************
- *
- * NAME: APP_vSetLed
- *
- * DESCRIPTION:
- * set the state ofthe given application led
- *
- * PARAMETER: void
- *
- * RETURNS: void
- *
- ****************************************************************************/
-void APP_vSetLed(uint8_t u8Led, bool_t bState)
-{
-    zbPlatLedSetState(u8Led, bState);
-}
-
-/****************************************************************************
- *
- * NAME: APP_u8GetLedStates
- *
- * DESCRIPTION:
- * Get leds state as bit mask
- *
- * PARAMETER: void
- *
- * RETURNS: uint8_t bitmask
- *
- ****************************************************************************/
-uint8_t APP_u8GetLedStates(void)
-{
-	return zbPlatLedGetStates();
-}
-
 
 /****************************************************************************/
 /***        Local Functions                                               ***/
 /****************************************************************************/
+/****************************************************************************
+ *
+ * NAME: APP_bConsoleReceive
+ *
+ * DESCRIPTION:
+ * Receives a character from the underlying terminal
+ *
+ * PARAMETERS: Name        RW  Usage
+ *             pu8Data         Received character
+ * RETURNS:
+ *  TRUE  if a character is available
+ *  FALSE otherwise
+ *
+ ****************************************************************************/
+bool_t APP_bConsoleReceiveChar(uint8_t* pu8Data)
+{
+    return zbPlatConsoleReceiveChar(pu8Data);
+}
 
+/****************************************************************************
+ *
+ * NAME: APP_vConsoleInitialise
+ *
+ * DESCRIPTION:
+ * Initialize console component to receive serial commands
+ *
+ * PARAMETERS:      Name            RW  Usage
+ * None.
+ *
+ * RETURNS:
+ * None.
+ *
+ * NOTES:
+ * None.
+ ****************************************************************************/
+void APP_vConsoleInitialise(void)
+{
+    (void)zbPlatConsoleInit();
+}
 
 /****************************************************************************/
 /***        END OF FILE                                                   ***/

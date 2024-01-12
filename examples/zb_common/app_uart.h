@@ -1,5 +1,5 @@
 /*
-* Copyright 2019,2023 NXP
+* Copyright 2019, 2023 NXP
 * All rights reserved.
 *
 * SPDX-License-Identifier: BSD-3-Clause
@@ -20,6 +20,10 @@ extern "C" {
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
+#ifndef TRACE_UART
+#define TRACE_UART	FALSE
+#endif
+
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
@@ -28,13 +32,14 @@ extern "C" {
 /***        Exported Functions                                            ***/
 /****************************************************************************/
 
-void UART_vInit(void);
+void UART_vInit(void *device);
 void UART_vTxChar(uint8_t u8TxChar);
 bool_t UART_bTxReady(void);
 void UART_vSetBaudRate(uint32_t u32BaudRate);
-bool_t UART_bBufferReceive ( uint8_t* u8Data );
+bool_t UART_bReceiveChar ( uint8_t* u8Data );
 void UART_vSendString(char* sMessage);
-
+bool_t UART_bReceiveBuffer(uint8_t* u8Buffer, uint32_t *pu32BufferLen);
+void UART_vFree(void);
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/

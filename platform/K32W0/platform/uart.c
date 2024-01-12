@@ -1,9 +1,9 @@
 /*
-* Copyright 2023 NXP
-* All rights reserved.
-*
-* SPDX-License-Identifier: BSD-3-Clause
-*/
+ * Copyright 2023 NXP
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #include <stdint.h>
 #include <stdbool.h>
 #include "EmbeddedTypes.h"
@@ -12,8 +12,10 @@
 #include "fsl_usart.h"
 #include "usart_dma_rxbuffer.h"
 
-bool zbPlatUartInit(void)
+bool zbPlatUartInit(void *device)
 {
+    (void)device;
+
     /* Debug console pins are initialized by BOARD_InitHardware */
     USART_DMA_Init();
 
@@ -48,7 +50,7 @@ bool zbPlatUartTransmit(uint8_t ch)
     return true;
 }
 
-bool zbPlatUartReceive(uint8_t *ch)
+bool zbPlatUartReceiveChar(uint8_t *ch)
 {
     bool result = true;
     if (USART_DMA_ReadBytes(ch, 1) == 0)
@@ -58,3 +60,21 @@ bool zbPlatUartReceive(uint8_t *ch)
     return result;
 }
 
+bool zbPlatUartReceiveBuffer(uint8_t *buffer, uint32_t *length)
+{
+    bool result        = true;
+    uint32_t readBytes = 0;
+
+    if ((readBytes = USART_DMA_ReadBytes(buffer, (uint16_t)(*length))) == 0)
+    {
+        result = false;
+    }
+
+    *length = readBytes;
+    return result;
+}
+
+void zbPlatUartFree(void)
+{
+    return;
+}
